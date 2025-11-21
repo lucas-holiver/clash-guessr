@@ -40,16 +40,19 @@ const defeatPlayAgainBtn = document.getElementById('defeat-play-again-btn');
 const defeatBackToMenuBtn = document.getElementById('defeat-back-to-menu-btn');
 const victoryBackToMenuBtn = document.getElementById('victory-back-to-menu-btn');
 
+// Elementos do Toast
+const toastNotification = document.getElementById('toast-notification');
+const toastMessage = document.getElementById('toast-message');
+let toastTimeout;
+
 // Inicialização
 document.addEventListener('DOMContentLoaded', () => {
     fetchCards();
     
-    // Associa a nova função centralizada a todos os botões que iniciam o jogo
     onePlayerBtn.addEventListener('click', startNewGame);
     victoryPlayAgainBtn.addEventListener('click', startNewGame);
     defeatPlayAgainBtn.addEventListener('click', startNewGame);
 
-    // Eventos de "Voltar ao Menu"
     backToMenuInGameBtn.addEventListener('click', backToMenu);
     victoryBackToMenuBtn.addEventListener('click', backToMenu);
     defeatBackToMenuBtn.addEventListener('click', backToMenu);
@@ -59,15 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function getCardImageSlug(name) {
     return name
         .toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, "") // Remove acentos
-        .replace(/\./g, '') // Remove pontos
-        .replace(/\s+/g, '-') // Espaço vira traço
-        .replace(/[^a-z0-9-]/g, ''); // Remove caracteres especiais
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
+        .replace(/\./g, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
 }
 
 function initializeHints() {
     hints = [
-        { steps: 3, label: 'Tipo', value: null, state: 'locked' }, // states: locked, ready, revealed
+        { steps: 3, label: 'Tipo', value: null, state: 'locked' },
         { steps: 6, label: 'Raridade', value: null, state: 'locked' },
         { steps: 10, label: 'Elixir', value: null, state: 'locked' }
     ];
@@ -84,7 +87,39 @@ function backToMenu() {
     mainMenu.classList.remove('hidden');
     gameContent.classList.add('hidden');
     victoryModal.classList.add('hidden');
-    victoryContent.classList.remove('victory-modal-enter'); // reseta classe de animação
+    victoryContent.classList.remove('victory-modal-enter');
+}
+
+function showToast(message) {
+    clearTimeout(toastTimeout);
+    toastMessage.textContent = message;
+    toastNotification.classList.remove('translate-x-[120%]');
+
+    toastTimeout = setTimeout(() => {
+        toastNotification.classList.add('translate-x-[120%]');
+    }, 4000);
+}
+
+function startMainMenuCooldown() {
+    let countdown = 5;
+    onePlayerBtn.disabled = true;
+    
+    const updateButtonText = () => {
+        onePlayerBtn.textContent = `Aguarde (${countdown}s)`;
+    };
+    
+    updateButtonText();
+
+    const interval = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+            updateButtonText();
+        } else {
+            clearInterval(interval);
+            onePlayerBtn.disabled = false;
+            onePlayerBtn.textContent = 'Um Jogador';
+        }
+    }, 1000);
 }
 
 async function startNewGame(event) {
@@ -92,11 +127,10 @@ async function startNewGame(event) {
     const allStartButtons = [onePlayerBtn, defeatPlayAgainBtn, victoryPlayAgainBtn];
     const originalButtonHTML = clickedButton.innerHTML;
 
-    // Desabilita todos os botões de início e mostra o estado de carregamento no que foi clicado
     allStartButtons.forEach(btn => btn.disabled = true);
     clickedButton.innerHTML = `
         <span class="flex items-center justify-center">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -107,25 +141,23 @@ async function startNewGame(event) {
         const res = await fetch(`${API_URL}/game`, { method: 'POST' });
         
         if (!res.ok) {
-            if (res.status === 429) { // Too Many Requests
+            if (res.status === 429) {
                 const { error } = await res.json();
-                alert(error || 'Você está tentando iniciar jogos muito rápido. Aguarde um momento.');
+                showToast(error || 'Você está tentando iniciar jogos muito rápido.');
             } else {
                 throw new Error(`Erro do servidor: ${res.status}`);
             }
-            return; // Aborta a função em caso de erro
+            return;
         }
 
         const data = await res.json();
         currentGameId = data.id;
         
-        // Esconde telas de menu/vitória e mostra o jogo
         mainMenu.classList.add('hidden');
         gameContent.classList.remove('hidden');
         victoryModal.classList.add('hidden');
         victoryContent.classList.remove('victory-modal-enter');
 
-        // Reseta o estado do jogo
         guessedCards.clear();
         guessesList.innerHTML = '';
         searchInput.value = '';
@@ -135,13 +167,24 @@ async function startNewGame(event) {
         gameOverMsg.classList.add('hidden');
         searchInput.focus();
 
+        if (clickedButton === onePlayerBtn) {
+            startMainMenuCooldown();
+        }
+
     } catch (err) {
         console.error("Erro ao iniciar jogo", err);
-        alert('Falha de comunicação com o servidor. Verifique sua conexão e tente novamente.');
+        showToast('Falha de comunicação com o servidor. Tente novamente.');
     } finally {
-        // Reabilita todos os botões e restaura o conteúdo do botão clicado
-        allStartButtons.forEach(btn => btn.disabled = false);
-        clickedButton.innerHTML = originalButtonHTML;
+        allStartButtons.forEach(btn => {
+            // Apenas reabilita os botões que não são o principal (que tem seu próprio cooldown)
+            if (btn !== onePlayerBtn) {
+                btn.disabled = false;
+            }
+        });
+        // Restaura o conteúdo dos botões de "jogar novamente"
+        if (clickedButton !== onePlayerBtn) {
+            clickedButton.innerHTML = originalButtonHTML;
+        }
     }
 }
 
@@ -152,7 +195,6 @@ function highlightMatch(text, term) {
     return text.replace(regex, `<span class="text-yellow-400 font-bold">$1</span>`);
 }
 
-// --- BUSCA / AUTOCOMPLETE (Atualizado para imagens locais) ---
 searchInput.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     suggestionsList.innerHTML = '';
@@ -173,10 +215,7 @@ searchInput.addEventListener('input', (e) => {
             li.className = "flex items-center p-2 sm:p-3 hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700 last:border-0 text-white";
             
             const highlightedName = highlightMatch(card.name, term);
-            
-            // 1. Gera o slug
             const slug = getCardImageSlug(card.name);
-            // 2. Monta o caminho local
             const localImgUrl = `./img/cards/${slug}.png`;
 
             li.innerHTML = `<img src="${localImgUrl}" class="w-8 h-8 sm:w-10 sm:h-10 object-contain mr-2 sm:mr-3"><span class="text-sm sm:text-base">${highlightedName}</span>`;
@@ -240,25 +279,17 @@ function getRarityColor(r) {
     return 'text-white';
 }
 
-// --- RENDERIZAÇÃO DO PALPITE (Atualizado para imagens locais) ---
 function renderGuessRow(data) {
     const card = data.card;
     const comp = data.comparisons;
-
-    // Configura as imagens locais
     const slug = getCardImageSlug(card.name);
     const localCardImage = `./img/cards/${slug}.png`;
-    // Se tiver evolução, o script de download salvou como "nome-evo.png"
     const localEvoImage = card.evolution ? `./img/cards/${slug}-evo.png` : null;
-
-    // Configura arena local (que já configuramos antes)
     const arenaUrl = `./img/arenas/arena${card.arena}.png`;
     const arenaName = `Arena ${card.arena}`;
 
     const row = document.createElement('div');
     row.className = "guess-row bg-slate-900/75 rounded-lg p-1 sm:p-2 grid grid-cols-6 gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50";
-
-    // --- HELPERS ---
 
     const getArrowIcon = (direction) => {
         if (!direction) return '';
@@ -283,17 +314,13 @@ function renderGuessRow(data) {
 
     const rarityClass = getRarityColor(card.rarity);
 
-    // --- HTML ---
     row.innerHTML = `
-        <!-- 1. CARTA (Imagem Local) -->
         <div class="col-span-1 flex flex-col items-center justify-center h-24 sm:h-36 p-1 sm:p-2">
             <img src="${localCardImage}" alt="${card.name}" class="w-10 h-14 sm:w-16 sm:h-20 object-contain drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"/>
             <span class="mt-1 text-[10px] sm:text-base font-clash font-bold text-white drop-shadow-md leading-tight ${rarityClass}">
                 ${card.name}
             </span>
         </div>
-
-        <!-- 2. ELIXIR -->
         <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md font-bold text-lg sm:text-3xl border-2 transition-all duration-300 overflow-hidden ${getStatusClasses(comp.elixir)}">
             ${comp.elixir !== 'correct' ? 
                 `<div class="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm">
@@ -305,8 +332,6 @@ function renderGuessRow(data) {
                 <span>${card.elixir}</span>
             </div>
         </div>
-
-        <!-- 3. RARIDADE -->
         <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 transition-all duration-300 overflow-hidden ${getStatusClasses(comp.rarity)}">
              ${comp.rarity !== 'correct' ? 
                 `<div class="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm">
@@ -317,16 +342,12 @@ function renderGuessRow(data) {
                 ${card.rarity}
             </span>
         </div>
-
-        <!-- 4. TIPO -->
         <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 font-bold text-lg overflow-hidden ${getStatusClasses(comp.type)}">
             <img src="${getTypeIcon(card.type)}" class="w-10 h-10 sm:w-16 sm:h-16 object-contain transition-opacity duration-300 group-hover:opacity-0">
             <span class="absolute drop-shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-clash text-sm sm:text-xl">
                 ${card.type}
             </span>
         </div>
-
-        <!-- 5. ARENA (Imagem Local) -->
         <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 rounded-md border-2 overflow-hidden ${getStatusClasses(comp.arena)}">
             <img src="${arenaUrl}" class="w-full h-full object-cover rounded opacity-80 group-hover:opacity-20 transition-all duration-300">
             <div class="absolute inset-0 flex flex-col items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/60 backdrop-blur-[2px]">
@@ -336,8 +357,6 @@ function renderGuessRow(data) {
                 </span>
             </div>
         </div>
-
-        <!-- 6. EVOLUÇÃO (Imagem Local) -->
         <div class="h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 ${getStatusClasses(comp.evolution)}">
             ${card.evolution ? 
                 `<img src="${localEvoImage}" class="h-16 sm:h-24 w-auto object-contain drop-shadow-lg" alt="Evo">` 
@@ -384,19 +403,17 @@ function renderHints() {
             wrapper.addEventListener('click', () => {
                 h.state = 'revealed';
                 renderHints();
-            }, { once: true }); // O listener só precisa ser acionado uma vez
+            }, { once: true });
         }
 
         hintsContainer.appendChild(div);
     });
 }
 
-
 function endGame(win, card) {
     searchSection.classList.add('hidden');
     
     if (win) {
-        // Show Victory Modal
         const slug = getCardImageSlug(card.name);
         const localCardImage = `./img/cards/${slug}.png`;
         const attemptsCount = guessedCards.size;
@@ -411,7 +428,6 @@ function endGame(win, card) {
         victoryContent.classList.add('victory-modal-enter');
 
     } else {
-        // Show original defeat message
         gameOverMsg.classList.remove('hidden');
         endTitle.innerHTML = `<div class="text-4xl mb-2">💀</div><span class="text-red-500 text-3xl font-clash-title">Derrota!</span><br><span class="text-slate-300 text-lg">A carta era <span class="text-yellow-400 font-bold">${card ? card.name : '???'}</span></span>`;
     }

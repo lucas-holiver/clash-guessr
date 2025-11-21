@@ -19,8 +19,13 @@ app.use(express.static(path.join(__dirname, '..')));
 // Armazenamento em memória dos jogos ativos
 const sessions = {}; 
 const rarityOrder = { 'Comum': 0, 'Rara': 1, 'Épica': 2, 'Lendária': 3, 'Campeão': 4 };
+
+// --- LÓGICA DE RATE LIMIT APRIMORADA ---
 const gameStartTimestamps = new Map();
-const RATE_LIMIT_SECONDS = 5; // Tempo de espera em segundos
+const rateLimitStrikes = new Map();
+const BASE_COOLDOWN_S = 5;       // Cooldown padrão
+const PENALTY_COOLDOWN_S = 15;     // Cooldown após múltiplos strikes
+const STRIKE_WINDOW_MS = 60 * 1000; // Janela de 1 minuto para contar strikes
 
 // 1. Rota para entregar lista básica (para o autocomplete do frontend)
 app.get('/cards', (req, res) => {
@@ -28,17 +33,35 @@ app.get('/cards', (req, res) => {
     res.json(list);
 });
 
-// 2. Iniciar Jogo
+// 2. Iniciar Jogo (com rate limit aprimorado)
 app.post('/game', (req, res) => {
     const userIp = req.ip;
     const now = Date.now();
     const lastRequestTime = gameStartTimestamps.get(userIp);
+    const userStrikes = rateLimitStrikes.get(userIp);
 
-    if (lastRequestTime && (now - lastRequestTime) < RATE_LIMIT_SECONDS * 1000) {
-        const timeLeft = Math.ceil((lastRequestTime + (RATE_LIMIT_SECONDS * 1000) - now) / 1000);
-        return res.status(429).json({ 
-            error: `Você está criando jogos muito rápido! Por favor, aguarde ${timeLeft} segundo(s).` 
-        });
+    // Limpa strikes expirados
+    if (userStrikes && now > userStrikes.expiry) {
+        rateLimitStrikes.delete(userIp);
+    }
+
+    const currentCooldown = (userStrikes?.count > 1) ? PENALTY_COOLDOWN_S : BASE_COOLDOWN_S;
+
+    if (lastRequestTime && (now - lastRequestTime) < currentCooldown * 1000) {
+        // Incrementa o strike do usuário
+        const newStrikeCount = (userStrikes?.count || 0) + 1;
+        rateLimitStrikes.set(userIp, { count: newStrikeCount, expiry: now + STRIKE_WINDOW_MS });
+        
+        const isPenalty = newStrikeCount > 2; // Aplica a mensagem de penalidade a partir do 3º strike
+        const cooldown = isPenalty ? PENALTY_COOLDOWN_S : BASE_COOLDOWN_S;
+        const timeLeft = Math.ceil((lastRequestTime + (cooldown * 1000) - now) / 1000);
+
+        let message = `Você está criando jogos muito rápido! Por favor, aguarde ${timeLeft} segundo(s).`;
+        if (isPenalty) {
+            message = `Muitas tentativas! A espera aumentou para ${cooldown} segundos. Aguarde.`;
+        }
+
+        return res.status(429).json({ error: message });
     }
     
     gameStartTimestamps.set(userIp, now);
