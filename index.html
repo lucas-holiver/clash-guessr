@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash Royale Guessr JS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="text-slate-100 antialiased">
+    <!-- Fundo -->
+    <div class="fixed inset-0 -z-10 bg-radial"></div>
+
+    <main class="container mx-auto p-4 flex flex-col items-center min-h-screen">
+        <header class="text-center my-6">
+            <h1 class="text-4xl sm:text-6xl font-clash-title tracking-wider">
+                Clash Royale Guessr
+            </h1>
+            <p class="text-slate-300 mt-2 text-shadow">Adivinhe a carta (JS Version)!</p>
+        </header>
+
+        <!-- Menu Principal -->
+        <section id="main-menu" class="w-full max-w-xs flex flex-col items-center gap-4 mt-8">
+            <button id="one-player-btn" class="w-full px-6 py-4 bg-yellow-500 text-slate-900 font-bold rounded-lg text-xl hover:bg-yellow-400 transition-transform hover:scale-105 transform">
+                Um Jogador
+            </button>
+            <button id="two-player-btn" class="w-full px-6 py-4 bg-slate-700 text-slate-400 font-bold rounded-lg text-xl cursor-not-allowed relative group transition-colors duration-300 hover:bg-slate-600 hover:text-yellow-300">
+                <span class="transition-opacity duration-300 group-hover:opacity-0">Dois Jogadores</span>
+                <span class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    EM BREVE
+                </span>
+            </button>
+        </section>
+
+        <div id="game-content" class="w-full max-w-4xl game-container p-4 sm:p-6 hidden relative">
+            
+            <button id="back-to-menu-ingame-btn" title="Voltar ao Menu Principal" class="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 hover:text-yellow-400 transition-colors z-30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+                </svg>
+            </button>
+
+            <!-- Área de Busca -->
+            <section id="search-section" class="w-full max-w-2xl mx-auto relative mb-6">
+                <div class="relative">
+                    <input type="text" id="search-input" placeholder="Digite o nome de uma carta..." 
+                           class="w-full p-4 pl-4 bg-slate-800/80 border-2 border-yellow-800/80 rounded-lg text-lg text-white focus:outline-none focus:border-[var(--color-interact)] transition-all" autocomplete="off">
+                    <!-- Lista de sugestões -->
+                    <ul id="suggestions-list" class="absolute top-full left-0 right-0 mt-2 bg-slate-800 border-2 border-slate-600 rounded-lg z-20 hidden max-h-60 overflow-y-auto"></ul>
+                </div>
+            </section>
+
+            <!-- Mensagem de Vitória/Derrota -->
+            <div id="game-over-msg" class="hidden text-center p-4 bg-slate-800 border-2 border-slate-600 rounded-lg mb-6">
+                <h2 id="end-title" class="text-2xl font-bold"></h2>
+                <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                    <button id="defeat-play-again-btn" class="px-6 py-3 bg-yellow-500 text-slate-900 font-bold rounded-lg hover:bg-yellow-400 transition-transform hover:scale-105">Jogar Novamente</button>
+                    <button id="defeat-back-to-menu-btn" class="px-6 py-3 bg-slate-600 text-slate-200 font-bold rounded-lg hover:bg-slate-500 transition-transform hover:scale-105">Menu Principal</button>
+                </div>
+            </div>
+
+            <!-- Dicas (Baús) -->
+            <section id="hints-container" class="flex justify-center gap-4 mb-6 flex-wrap">
+                <!-- Injetado via JS -->
+            </section>
+
+            <!-- Grid de Palpites -->
+            <section class="w-full overflow-x-auto">
+                <div>
+                    <div class="grid grid-cols-6 gap-1 sm:gap-2 text-center font-bold text-slate-300 p-1 sm:p-2 text-xs sm:text-sm">
+                        <span>Carta</span>
+                        <span>Custo</span>
+                        <span>Raridade</span>
+                        <span>Tipo</span>
+                        <span>Arena</span>
+                        <span>Evolução</span>
+                    </div>
+                    <div id="guesses-list" class="space-y-2">
+                        <!-- Palpites entram aqui via JS -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Victory Modal -->
+    <div id="victory-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <!-- Overlay -->
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+        
+        <!-- Modal Content -->
+        <div id="victory-content" class="relative bg-slate-800 border-2 border-yellow-500 rounded-2xl w-full max-w-md text-center p-6 sm:p-8 transform transition-all">
+            <h2 class="text-5xl font-clash-title text-yellow-400 text-shadow mb-4">VITÓRIA!</h2>
+            
+            <div class="my-6 flex flex-col items-center">
+                 <img id="victory-card-image" src="" alt="Carta Vencedora" class="w-32 h-auto object-contain drop-shadow-[0_10px_15px_rgba(250,204,21,0.4)]"/>
+                 <h3 id="victory-card-name" class="mt-4 text-2xl font-clash font-bold"></h3>
+            </div>
+           
+            <p id="victory-attempts" class="text-slate-300 text-lg mb-8"></p>
+
+            <div class="w-full flex flex-col sm:flex-row gap-3">
+                <button id="victory-play-again-btn" class="w-full px-6 py-3 bg-yellow-500 text-slate-900 font-bold rounded-lg text-xl hover:bg-yellow-400 transition-transform hover:scale-105">
+                    Jogar Novamente
+                </button>
+                <button id="victory-back-to-menu-btn" class="w-full px-6 py-3 bg-slate-600 text-slate-200 font-bold rounded-lg text-xl hover:bg-slate-500 transition-transform hover:scale-105">
+                    Menu Principal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
