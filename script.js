@@ -683,23 +683,22 @@ function stopTurnTimer() {
 
 function updateTurnCounter(current, max) {
     const turnCounterEl = document.getElementById('turn-counter');
-    const displayEl = document.getElementById('turn-counter-display');
-    if (!turnCounterEl || !displayEl) return;
+    if (!turnCounterEl) return;
     
     turnCounterEl.textContent = current;
 
     const progress = current / max;
-    let colorClass = 'text-green-400'; // Default: até 50%
+    let colorClass = 'text-green-400';
     if (current === max) {
-        colorClass = 'text-red-500'; // Última rodada
+        colorClass = 'text-red-500';
     } else if (progress > 0.75) {
-        colorClass = 'text-orange-400'; // > 75% até penúltima
+        colorClass = 'text-orange-400';
     } else if (progress > 0.5) {
-        colorClass = 'text-yellow-400'; // > 50% até 75%
+        colorClass = 'text-yellow-400';
     }
     
-    displayEl.classList.remove('text-green-400', 'text-yellow-400', 'text-orange-400', 'text-red-500');
-    displayEl.classList.add(colorClass);
+    turnCounterEl.classList.remove('text-green-400', 'text-yellow-400', 'text-orange-400', 'text-red-500');
+    turnCounterEl.classList.add(colorClass);
 }
 
 // --- RENDERIZAÇÃO ---
