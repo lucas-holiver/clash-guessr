@@ -106,28 +106,64 @@ app.post('/guess', (req, res) => {
 
 
 // --- MODO DOIS JOGADORES ---
+const HOST_ADJECTIVES = ['Rápido', 'Astuto', 'Poderoso', 'Sombrio', 'Dourado', 'Gélido', 'Elétrico'];
+const HOST_NOUNS = ['Cavaleiro', 'Goblin', 'Dragão', 'Príncipe', 'Mago', 'Gigante', 'Bárbaro', 'Corredor', 'Executor'];
+
 app.post('/game/create-two-player', (req, res) => {
+    const userIp = req.ip;
+    const now = Date.now();
+    const lastRequestTime = gameStartTimestamps.get(userIp);
+    const userStrikes = rateLimitStrikes.get(userIp);
+
+    if (userStrikes && now > userStrikes.expiry) {
+        rateLimitStrikes.delete(userIp);
+    }
+
+    const currentCooldown = (userStrikes?.count > 1) ? PENALTY_COOLDOWN_S : BASE_COOLDOWN_S;
+
+    if (lastRequestTime && (now - lastRequestTime) < currentCooldown * 1000) {
+        const newStrikeCount = (userStrikes?.count || 0) + 1;
+        rateLimitStrikes.set(userIp, { count: newStrikeCount, expiry: now + STRIKE_WINDOW_MS });
+        
+        const isPenalty = newStrikeCount > 2;
+        const cooldown = isPenalty ? PENALTY_COOLDOWN_S : BASE_COOLDOWN_S;
+        const timeLeft = Math.ceil((lastRequestTime + (cooldown * 1000) - now) / 1000);
+
+        let message = `Você está criando jogos muito rápido! Por favor, aguarde ${timeLeft} segundo(s).`;
+        if (isPenalty) {
+            message = `Muitas tentativas! A espera aumentou para ${cooldown} segundos. Aguarde.`;
+        }
+        return res.status(429).json({ error: message });
+    }
+    
+    gameStartTimestamps.set(userIp, now);
+
     const { maxAttempts, hints, isPublic } = req.body;
     const gameId = uuidv4().substring(0, 6).toUpperCase();
     
+    const randomAdj = HOST_ADJECTIVES[Math.floor(Math.random() * HOST_ADJECTIVES.length)];
+    const randomNoun = HOST_NOUNS[Math.floor(Math.random() * HOST_NOUNS.length)];
+    const hostName = `Anfitrião ${randomAdj} ${randomNoun}`;
+
     twoPlayerGames[gameId] = {
         id: gameId,
+        hostName,
         secretCard: CARDS[Math.floor(Math.random() * CARDS.length)],
         players: [],
         settings: { maxAttempts, hints, isPublic },
-        state: 'waiting',
+        state: 'waiting', // 'waiting', 'playing', 'finished'
         currentTurn: 1,
         turnGuesses: {},
         turnTimer: null,
     };
-    console.log(`Jogo 2P ${gameId} criado. Segredo: ${twoPlayerGames[gameId].secretCard.name}`);
+    console.log(`Jogo 2P ${gameId} criado por ${hostName}. Segredo: ${twoPlayerGames[gameId].secretCard.name}`);
     res.status(201).json({ gameId });
 });
 
 app.get('/public-games', (req, res) => {
     const games = Object.values(twoPlayerGames)
         .filter(g => g.settings.isPublic && g.state === 'waiting' && g.players.length < 2)
-        .map(g => ({ id: g.id, settings: g.settings }));
+        .map(g => ({ id: g.id, settings: g.settings, hostName: g.hostName }));
     res.json(games);
 });
 
@@ -138,10 +174,16 @@ wss.on('connection', ws => {
         try {
             const data = JSON.parse(message);
             
-            if (data.type === 'join') {
-                handleJoin(ws, data.gameId);
-            } else if (data.type === 'guess') {
-                handleGuess(ws, data.guessName);
+            switch(data.type) {
+                case 'join':
+                    handleJoin(ws, data.gameId);
+                    break;
+                case 'toggleReady':
+                    handleToggleReady(ws);
+                    break;
+                case 'guess':
+                    handleGuess(ws, data.guessName);
+                    break;
             }
 
         } catch (e) { console.error('Mensagem WS inválida:', e); }
@@ -151,6 +193,18 @@ wss.on('connection', ws => {
         handleDisconnect(ws);
     });
 });
+
+function broadcastLobbyUpdate(game) {
+    const playersData = game.players.map(p => ({ id: p.id, name: p.name, isReady: p.isReady }));
+    game.players.forEach(p => {
+        p.ws.send(JSON.stringify({
+            type: 'lobbyUpdate',
+            gameId: game.id,
+            players: playersData,
+            myId: p.id,
+        }));
+    });
+}
 
 function handleJoin(ws, gameId) {
     const game = twoPlayerGames[gameId];
@@ -164,16 +218,34 @@ function handleJoin(ws, gameId) {
     const playerId = uuidv4();
     ws.playerId = playerId;
     ws.gameId = gameId;
-    game.players.push({ ws, id: playerId });
+    
+    const playerName = game.players.length === 0 ? 'Anfitrião' : 'Oponente';
+    game.players.push({ ws, id: playerId, name: playerName, isReady: false });
 
-    if (game.players.length === 2) {
-        game.state = 'playing';
-        const gameStartPayload = {
-            type: 'gameStart',
-            gameId: game.id,
-            settings: game.settings,
-        };
-        game.players.forEach(p => p.ws.send(JSON.stringify(gameStartPayload)));
+    console.log(`Jogador ${playerId} (${playerName}) entrou na sala ${gameId}.`);
+    broadcastLobbyUpdate(game);
+}
+
+function handleToggleReady(ws) {
+    const game = twoPlayerGames[ws.gameId];
+    if (!game || game.state !== 'waiting') return;
+
+    const player = game.players.find(p => p.id === ws.playerId);
+    if (player) {
+        player.isReady = !player.isReady;
+        console.log(`Jogador ${player.id} na sala ${game.id} mudou status para: ${player.isReady}`);
+        broadcastLobbyUpdate(game);
+
+        if (game.players.length === 2 && game.players.every(p => p.isReady)) {
+            console.log(`Jogo ${game.id} iniciando!`);
+            game.state = 'playing';
+            const gameStartPayload = {
+                type: 'gameStart',
+                gameId: game.id,
+                settings: game.settings,
+            };
+            game.players.forEach(p => p.ws.send(JSON.stringify(gameStartPayload)));
+        }
     }
 }
 
@@ -188,7 +260,6 @@ function handleGuess(ws, guessName) {
     if (guessCount === 1) {
         const feedback = processGuess(guessName, game.secretCard);
         
-        // Notifica o jogador que acabou de chutar
         ws.send(JSON.stringify({
             type: 'turnUpdate',
             turn: game.currentTurn,
@@ -196,27 +267,23 @@ function handleGuess(ws, guessName) {
             opponentFeedback: { waiting: true } 
         }));
         
-        // Notifica o oponente que está aguardando
         const opponent = game.players.find(p => p.id !== ws.playerId);
         if (opponent) {
             opponent.ws.send(JSON.stringify({
                 type: 'turnUpdate',
                 turn: game.currentTurn,
-                myFeedback: null, // Não renderiza nada no seu próprio painel
-                opponentFeedback: { hasGuessed: true } // Mostra que o oponente já jogou
+                myFeedback: null,
+                opponentFeedback: { hasGuessed: true }
             }));
         }
 
-        // Inicia o cronômetro para o outro jogador
         game.turnTimer = setTimeout(() => {
             const idlePlayer = game.players.find(p => !game.turnGuesses[p.id]);
             if (idlePlayer) {
                 console.log(`Jogador ${idlePlayer.id} no jogo ${game.id} esgotou o tempo. Auto-chute.`);
                 const randomCard = CARDS[Math.floor(Math.random() * CARDS.length)];
                 game.turnGuesses[idlePlayer.id] = randomCard.name;
-
                 idlePlayer.ws.send(JSON.stringify({ type: 'autoGuessed', cardName: randomCard.name }));
-
                 processTurn(game);
             }
         }, 30000); // 30 segundos
@@ -241,14 +308,27 @@ function handleDisconnect(ws) {
         clearTimeout(game.turnTimer);
         game.turnTimer = null;
     }
-    
-    const remainingPlayer = game.players.find(p => p.id !== ws.playerId);
-    if (remainingPlayer && game.state === 'playing') {
-        remainingPlayer.ws.send(JSON.stringify({ type: 'opponentDisconnected' }));
-    }
 
-    console.log(`Jogador desconectado do jogo ${ws.gameId}. Encerrando.`);
-    delete twoPlayerGames[ws.gameId];
+    const disconnectedPlayerName = game.players.find(p => p.id === ws.playerId)?.name || 'Jogador';
+    console.log(`${disconnectedPlayerName} desconectado do jogo ${ws.gameId}.`);
+    
+    // Remove o jogador que desconectou
+    game.players = game.players.filter(p => p.id !== ws.playerId);
+
+    if (game.players.length === 0) {
+        console.log(`Jogo ${ws.gameId} está vazio. Deletando.`);
+        delete twoPlayerGames[ws.gameId];
+    } else {
+        // Se ainda há jogadores, notifique-os
+        if (game.state === 'playing') {
+            game.players[0].ws.send(JSON.stringify({ type: 'opponentDisconnected' }));
+            console.log(`Notificando jogador restante e deletando jogo ${ws.gameId} em andamento.`);
+            delete twoPlayerGames[ws.gameId]; // Encerra o jogo se estava em andamento
+        } else { // state is 'waiting'
+            console.log(`Atualizando lobby do jogo ${ws.gameId} para o jogador restante.`);
+            broadcastLobbyUpdate(game);
+        }
+    }
 }
 
 

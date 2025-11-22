@@ -44,17 +44,27 @@
 
                 <!-- View de Criar Jogo -->
                 <div id="create-game-view">
-                    <div id="game-code-section" class="text-center mb-6 hidden">
-                        <p class="text-slate-300 mb-2">Compartilhe este código com seu amigo:</p>
-                        <div class="flex items-center justify-center gap-2">
-                            <span id="game-code-display" class="font-mono"></span>
-                            <button id="copy-code-btn" title="Copiar Código" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                            </button>
+                    <!-- Nova Seção de Lobby/Pronto -->
+                    <div id="game-lobby-section" class="hidden">
+                        <div class="text-center mb-6">
+                            <p class="text-slate-300 mb-2">Compartilhe este código com seu amigo:</p>
+                            <div class="flex items-center justify-center gap-2">
+                                <span id="lobby-game-code-display" class="font-mono"></span>
+                                <button id="lobby-copy-code-btn" title="Copiar Código" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                </button>
+                            </div>
                         </div>
-                         <p id="waiting-for-player-msg" class="text-yellow-400 mt-4 text-lg hidden animate-pulse">Aguardando oponente...</p>
+                        <h3 class="text-2xl font-bold text-center mb-4 text-yellow-400">Jogadores na Sala</h3>
+                        <div id="player-list" class="space-y-3 mb-6 bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                            <!-- Slots de jogador injetados aqui -->
+                        </div>
+                        <button id="toggle-ready-btn" class="w-full px-6 py-4 bg-green-600 text-white font-bold rounded-lg text-xl hover:bg-green-500 transition-transform hover:scale-105">
+                            Estou Pronto
+                        </button>
                     </div>
-
+                    
+                    <!-- Seção de Configurações do Jogo -->
                     <div id="game-settings-section">
                         <h3 class="text-2xl font-bold text-center mb-4 text-yellow-400">Opções da Partida</h3>
                         <div class="space-y-6">

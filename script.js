@@ -8,6 +8,7 @@
 const API_URL = ''; // <-- TROQUE ESTE IP PELO SEU!
 
 let currentGameId = null;
+let myPlayerId = null;
 let allCards = [];
 let guessedCards = new Set();
 let hints = [];
@@ -56,10 +57,11 @@ const showJoinGameBtn = document.getElementById('show-join-game-btn');
 const createGameView = document.getElementById('create-game-view');
 const joinGameView = document.getElementById('join-game-view');
 const createGameBtn = document.getElementById('create-game-btn');
-const gameCodeSection = document.getElementById('game-code-section');
-const gameCodeDisplay = document.getElementById('game-code-display');
-const copyCodeBtn = document.getElementById('copy-code-btn');
-const waitingForPlayerMsg = document.getElementById('waiting-for-player-msg');
+const gameLobbySection = document.getElementById('game-lobby-section');
+const lobbyGameCodeDisplay = document.getElementById('lobby-game-code-display');
+const lobbyCopyCodeBtn = document.getElementById('lobby-copy-code-btn');
+const playerList = document.getElementById('player-list');
+const toggleReadyBtn = document.getElementById('toggle-ready-btn');
 const gameSettingsSection = document.getElementById('game-settings-section');
 const maxAttemptsSlider = document.getElementById('max-attempts-slider');
 const maxAttemptsValue = document.getElementById('max-attempts-value');
@@ -110,12 +112,17 @@ document.addEventListener('DOMContentLoaded', () => {
     showJoinGameBtn.addEventListener('click', () => switchLobbyView('join'));
     maxAttemptsSlider.addEventListener('input', (e) => maxAttemptsValue.textContent = e.target.value);
     createGameBtn.addEventListener('click', createTwoPlayerGame);
-    copyCodeBtn.addEventListener('click', copyGameCode);
+    lobbyCopyCodeBtn.addEventListener('click', () => copyGameCode(lobbyGameCodeDisplay.textContent));
     refreshPublicGamesBtn.addEventListener('click', fetchPublicGames);
     joinByCodeBtn.addEventListener('click', () => {
         const code = joinCodeInput.value.trim().toUpperCase();
         if (code) joinTwoPlayerGame(code);
         else showToast("Por favor, insira um código.");
+    });
+    toggleReadyBtn.addEventListener('click', () => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'toggleReady' }));
+        }
     });
 
     // Listeners Mobile 2P
@@ -167,6 +174,7 @@ function hideGameNotification() {
 // --- LÓGICA DE NAVEGAÇÃO E UI ---
 function backToMenu() {
     if (ws) {
+        ws.onclose = null; // Evita que a mensagem de 'conexão perdida' apareça ao voltar voluntariamente
         ws.close();
         ws = null;
     }
@@ -183,6 +191,7 @@ function backToMenu() {
 
 function backToLobby() {
     if (ws) {
+        ws.onclose = null;
         ws.close();
         ws = null;
     }
@@ -198,8 +207,7 @@ function backToLobby() {
 
 function resetLobbyUI() {
     gameSettingsSection.classList.remove('hidden');
-    gameCodeSection.classList.add('hidden');
-    waitingForPlayerMsg.classList.add('hidden');
+    gameLobbySection.classList.add('hidden');
     createGameBtn.disabled = false;
     createGameBtn.textContent = 'Criar e Aguardar';
 }
@@ -467,10 +475,6 @@ async function createTwoPlayerGame() {
 
         const data = await res.json();
         if (data.gameId) {
-            gameSettingsSection.classList.add('hidden');
-            gameCodeDisplay.textContent = data.gameId;
-            gameCodeSection.classList.remove('hidden');
-            waitingForPlayerMsg.classList.remove('hidden');
             joinTwoPlayerGame(data.gameId, true);
         }
     } catch (err) {
@@ -482,6 +486,13 @@ async function createTwoPlayerGame() {
 
 function joinTwoPlayerGame(gameId, isHost = false) {
     isTwoPlayerMode = true;
+
+    // Garante que apenas uma conexão WS esteja ativa
+    if (ws && ws.readyState !== WebSocket.CLOSED) {
+        ws.onclose = null; // Impede que a lógica de reconexão/mensagem de erro seja acionada
+        ws.close();
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const wsUrl = `${protocol}://${window.location.host}`;
     
@@ -494,6 +505,16 @@ function joinTwoPlayerGame(gameId, isHost = false) {
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         switch(data.type) {
+            case 'lobbyUpdate':
+                myPlayerId = data.myId;
+                mainMenu.classList.add('hidden');
+                twoPlayerLobby.classList.remove('hidden');
+                switchLobbyView('create');
+                gameSettingsSection.classList.add('hidden');
+                gameLobbySection.classList.remove('hidden');
+                lobbyGameCodeDisplay.textContent = data.gameId;
+                renderLobby(data.players);
+                break;
             case 'gameStart':
                 currentGameId = data.gameId;
                 prepareTwoPlayerBoard(data.settings);
@@ -549,10 +570,8 @@ function joinTwoPlayerGame(gameId, isHost = false) {
                 break;
             case 'error':
                 showToast(data.message);
-                if (!isHost) {
-                    ws.close();
-                    backToLobby();
-                }
+                 if (ws) ws.close();
+                 backToLobby();
                 break;
         }
     };
@@ -570,6 +589,42 @@ function joinTwoPlayerGame(gameId, isHost = false) {
         console.error('WebSocket Error:', err);
         showToast('Erro de conexão com o servidor.');
     };
+}
+
+function renderLobby(players) {
+    playerList.innerHTML = '';
+    const me = players.find(p => p.id === myPlayerId);
+
+    players.forEach(player => {
+        const isReady = player.isReady;
+        const playerDiv = document.createElement('div');
+        playerDiv.className = 'flex items-center justify-between p-3 bg-slate-800 rounded-lg';
+        playerDiv.innerHTML = `
+            <span class="font-bold text-lg">${player.name} ${player.id === myPlayerId ? '(Você)' : ''}</span>
+            <span class="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${isReady ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}">
+                <span class="w-3 h-3 rounded-full ${isReady ? 'bg-green-400' : 'bg-yellow-400 animate-pulse'}"></span>
+                ${isReady ? 'Pronto' : 'Aguardando'}
+            </span>
+        `;
+        playerList.appendChild(playerDiv);
+    });
+
+    if (players.length < 2) {
+        const waitingDiv = document.createElement('div');
+        waitingDiv.className = 'flex items-center justify-center p-3 bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-lg text-slate-400 italic';
+        waitingDiv.textContent = 'Aguardando oponente...';
+        playerList.appendChild(waitingDiv);
+    }
+    
+    if (me?.isReady) {
+        toggleReadyBtn.textContent = 'Cancelar';
+        toggleReadyBtn.classList.remove('bg-green-600', 'hover:bg-green-500');
+        toggleReadyBtn.classList.add('bg-red-600', 'hover:bg-red-500');
+    } else {
+        toggleReadyBtn.textContent = 'Estou Pronto';
+        toggleReadyBtn.classList.remove('bg-red-600', 'hover:bg-red-500');
+        toggleReadyBtn.classList.add('bg-green-600', 'hover:bg-green-500');
+    }
 }
 
 function switchTwoPlayerMobileView(view) {
@@ -636,10 +691,13 @@ async function fetchPublicGames() {
                 const li = document.createElement('li');
                 li.className = 'public-game-item';
                 li.innerHTML = `
-                    <span>
-                        Dicas: ${game.settings.hints ? '✅' : '❌'} | 
-                        Tentativas: ${game.settings.maxAttempts}
-                    </span>
+                    <div class="flex flex-col text-sm">
+                        <span class="font-bold text-yellow-300">${game.hostName}</span>
+                        <span class="text-slate-400">
+                            Dicas: ${game.settings.hints ? '✅' : '❌'} | 
+                            Tentativas: ${game.settings.maxAttempts}
+                        </span>
+                    </div>
                     <button class="join-public-btn">Entrar</button>
                 `;
                 li.querySelector('.join-public-btn').addEventListener('click', () => joinTwoPlayerGame(game.id));
@@ -652,14 +710,15 @@ async function fetchPublicGames() {
     }
 }
 
-function copyGameCode() {
-    navigator.clipboard.writeText(gameCodeDisplay.textContent)
+function copyGameCode(code) {
+    navigator.clipboard.writeText(code)
         .then(() => showToast('Código copiado!'))
         .catch(() => showToast('Falha ao copiar o código.'));
 }
 
 function leaveTwoPlayerGame() {
     if (ws) {
+        ws.onclose = null;
         ws.close();
         ws = null;
     }
