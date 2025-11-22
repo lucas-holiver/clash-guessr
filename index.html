@@ -24,12 +24,93 @@
             <button id="one-player-btn" class="w-full px-6 py-4 bg-yellow-500 text-slate-900 font-bold rounded-lg text-xl hover:bg-yellow-400 transition-transform hover:scale-105 transform disabled:bg-slate-500 disabled:scale-100 disabled:cursor-wait">
                 Um Jogador
             </button>
-            <button id="two-player-btn" class="w-full px-6 py-4 bg-slate-700 text-slate-400 font-bold rounded-lg text-xl cursor-not-allowed relative group transition-colors duration-300 hover:bg-slate-600 hover:text-yellow-300">
-                <span class="transition-opacity duration-300 group-hover:opacity-0">Dois Jogadores</span>
-                <span class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    EM BREVE
-                </span>
+            <button id="two-player-btn" class="w-full px-6 py-4 bg-blue-600 text-white font-bold rounded-lg text-xl hover:bg-blue-500 transition-transform hover:scale-105 transform">
+                Dois Jogadores
             </button>
+        </section>
+
+        <!-- Lobby Dois Jogadores -->
+        <section id="two-player-lobby" class="w-full max-w-2xl flex-col items-center gap-4 mt-8 hidden">
+            <div class="w-full p-4 sm:p-6 game-container">
+                <button id="back-to-menu-lobby-btn" title="Voltar ao Menu Principal" class="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 hover:text-yellow-400 transition-colors z-30">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+                    </svg>
+                </button>
+                <div class="flex justify-center border-b border-slate-600 mb-6">
+                    <button id="show-create-game-btn" class="lobby-tab-btn active" data-view="create-game-view">Criar Jogo</button>
+                    <button id="show-join-game-btn" class="lobby-tab-btn" data-view="join-game-view">Entrar no Jogo</button>
+                </div>
+
+                <!-- View de Criar Jogo -->
+                <div id="create-game-view">
+                    <div id="game-code-section" class="text-center mb-6 hidden">
+                        <p class="text-slate-300 mb-2">Compartilhe este código com seu amigo:</p>
+                        <div class="flex items-center justify-center gap-2">
+                            <span id="game-code-display" class="font-mono"></span>
+                            <button id="copy-code-btn" title="Copiar Código" class="p-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            </button>
+                        </div>
+                         <p id="waiting-for-player-msg" class="text-yellow-400 mt-4 text-lg hidden animate-pulse">Aguardando oponente...</p>
+                    </div>
+
+                    <div id="game-settings-section">
+                        <h3 class="text-2xl font-bold text-center mb-4 text-yellow-400">Opções da Partida</h3>
+                        <div class="space-y-6">
+                             <div>
+                                <label for="max-attempts-slider" class="flex justify-between items-center text-lg mb-2">
+                                    <span>Tentativas</span>
+                                    <span id="max-attempts-value" class="font-bold text-yellow-300 text-xl">15</span>
+                                </label>
+                                <input type="range" id="max-attempts-slider" min="5" max="20" value="15" class="w-full h-3 bg-slate-700 rounded-lg appearance-none cursor-pointer range-lg">
+                            </div>
+
+                            <div class="flex justify-between items-center">
+                                <label for="hints-enabled-toggle" class="text-lg">Dicas</label>
+                                <label class="inline-flex items-center cursor-pointer">
+                                  <input type="checkbox" id="hints-enabled-toggle" class="sr-only peer" checked>
+                                  <div class="relative w-14 h-8 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600"></div>
+                                </label>
+                            </div>
+
+                            <div class="flex justify-between items-center">
+                                <label for="is-public-toggle" class="text-lg">Partida Pública</label>
+                                <label class="inline-flex items-center cursor-pointer">
+                                  <input type="checkbox" id="is-public-toggle" class="sr-only peer" checked>
+                                  <div class="relative w-14 h-8 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                        </div>
+                        <button id="create-game-btn" class="mt-8 w-full px-6 py-4 bg-yellow-500 text-slate-900 font-bold rounded-lg text-xl hover:bg-yellow-400 transition-transform hover:scale-105">
+                            Criar e Aguardar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- View de Entrar no Jogo -->
+                <div id="join-game-view" class="hidden">
+                     <div class="mb-6">
+                        <label for="join-code-input" class="text-lg mb-2 block">Entrar com Código</label>
+                        <div class="flex gap-2">
+                             <input type="text" id="join-code-input" placeholder="Cole o código aqui..." class="flex-grow p-3 bg-slate-800 border-2 border-slate-600 rounded-lg text-lg text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                             <button id="join-by-code-btn" class="px-6 py-3 bg-yellow-500 text-slate-900 font-bold rounded-lg hover:bg-yellow-400">Entrar</button>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-yellow-400">Partidas Públicas</h3>
+                            <button id="refresh-public-games-btn" title="Atualizar Lista" class="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors">
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 4l1.5 1.5A9 9 0 0120.5 16" /></svg>
+                            </button>
+                        </div>
+                        <ul id="public-games-list" class="space-y-2 h-48 overflow-y-auto bg-slate-900/50 p-2 rounded-lg border border-slate-700">
+                           <!-- Lista de jogos públicos aqui -->
+                           <li id="no-public-games" class="text-center text-slate-400 p-4">Nenhuma partida pública encontrada.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <div id="game-content" class="w-full max-w-4xl game-container p-4 sm:p-6 hidden relative">
@@ -49,6 +130,11 @@
                     <ul id="suggestions-list" class="absolute top-full left-0 right-0 mt-2 bg-slate-800 border-2 border-slate-600 rounded-lg z-20 hidden max-h-60 overflow-y-auto"></ul>
                 </div>
             </section>
+            
+            <!-- Notificação de Jogo -->
+            <div id="game-notification" class="hidden text-center p-4 bg-blue-900/50 border-2 border-blue-500 rounded-lg mb-6">
+                <p id="game-notification-text" class="text-lg font-bold"></p>
+            </div>
 
             <!-- Mensagem de Vitória/Derrota -->
             <div id="game-over-msg" class="hidden text-center p-4 bg-slate-800 border-2 border-slate-600 rounded-lg mb-6">

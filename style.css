@@ -43,6 +43,7 @@ body { font-family: 'Supercell-Magic', sans-serif; }
     backdrop-filter: blur(8px);
     border: 2px solid #5a677d;
     border-radius: 1rem;
+    position: relative;
 }
 
 /* Cores de Status */
@@ -236,10 +237,6 @@ body { font-family: 'Supercell-Magic', sans-serif; }
 }
 .hint-locked:hover .chest-image {
     transform: scale(1.1);
-    animation: wobble 1.2s ease-in-out infinite;
-}
-.hint-locked:hover .sparkle-container {
-    display: block;
 }
 
 /* Estado: Pronto para Abrir */
@@ -261,4 +258,85 @@ body { font-family: 'Supercell-Magic', sans-serif; }
     filter: none;
     transform: scale(1.1);
     filter: drop-shadow(0 0 10px rgba(253, 224, 71, 0.6));
+}
+
+/* --- ESTILOS DO LOBBY 2P --- */
+.lobby-tab-btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+    border-bottom: 4px solid transparent;
+    color: #94a3b8; /* text-slate-400 */
+    transition: color 0.3s ease, border-color 0.3s ease;
+}
+.lobby-tab-btn:hover {
+    color: #e2e8f0; /* text-slate-300 */
+}
+.lobby-tab-btn.active {
+    border-color: #f59e0b; /* border-yellow-500 */
+    color: #ffffff;
+}
+
+#game-code-display {
+    background: #1e293b;
+    border: 2px dashed #475569;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+    color: #fef08a; /* yellow-200 */
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background: #f59e0b; /* yellow-500 */
+  cursor: pointer;
+  border-radius: 50%;
+  border: 3px solid #334155; /* slate-700 */
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  background: #f59e0b;
+  cursor: pointer;
+  border-radius: 50%;
+   border: 3px solid #334155;
+}
+
+.public-game-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: rgba(30, 41, 59, 0.8);
+    border-radius: 0.5rem;
+    border: 1px solid #475569;
+}
+.join-public-btn {
+    padding: 0.5rem 1rem;
+    background-color: #f59e0b; /* yellow-500 */
+    color: #1e293b; /* slate-800 */
+    border-radius: 0.375rem;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+.join-public-btn:hover {
+    background-color: #facc15; /* yellow-400 */
+}
+
+.player-label {
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    background-color: #f59e0b;
+    color: #1e293b;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: bold;
+    z-index: 10;
 }
