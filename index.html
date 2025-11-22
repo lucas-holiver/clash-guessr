@@ -161,16 +161,18 @@
 
             <!-- Grid de Palpites -->
             <section class="w-full overflow-x-auto">
-                <div class="grid grid-cols-[100px_repeat(5,80px)] sm:grid-cols-[140px_repeat(5,110px)] gap-1 sm:gap-2 text-center font-bold text-slate-300 p-1 sm:p-2 text-xs sm:text-sm">
-                    <span>Carta</span>
-                    <span>Custo</span>
-                    <span>Raridade</span>
-                    <span>Tipo</span>
-                    <span>Arena</span>
-                    <span>Evolução</span>
-                </div>
-                <div id="sp-guesses-list" class="space-y-2">
-                    <!-- Palpites entram aqui via JS -->
+                <div class="inline-block min-w-full">
+                    <div class="grid grid-cols-[100px_repeat(5,80px)] sm:grid-cols-[140px_repeat(5,110px)] gap-1 sm:gap-2 text-center font-bold text-slate-300 p-1 sm:p-2 text-xs sm:text-sm">
+                        <span>Carta</span>
+                        <span>Custo</span>
+                        <span>Raridade</span>
+                        <span>Tipo</span>
+                        <span>Arena</span>
+                        <span>Evolução</span>
+                    </div>
+                    <div id="sp-guesses-list" class="space-y-2">
+                        <!-- Palpites entram aqui via JS -->
+                    </div>
                 </div>
             </section>
         </div>
@@ -259,7 +261,7 @@
     </div>
 
     <!-- Toast Notification -->
-    <div id="toast-notification" class="fixed bottom-5 right-5 bg-red-600 text-white py-3 px-5 rounded-lg shadow-lg transform translate-x-[120%] transition-transform duration-500 ease-out z-50">
+    <div id="toast-notification" class="fixed bottom-5 right-5 bg-red-600 text-white py-3 px-5 rounded-lg shadow-lg transform translate-x-full opacity-0 transition-all duration-500 ease-out z-50">
         <p id="toast-message"></p>
     </div>
 

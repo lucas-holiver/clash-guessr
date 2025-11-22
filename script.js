@@ -143,9 +143,9 @@ async function fetchCards() {
 function showToast(message) {
     clearTimeout(toastTimeout);
     toastMessage.textContent = message;
-    toastNotification.classList.remove('translate-x-[120%]');
+    toastNotification.classList.remove('translate-x-full', 'opacity-0');
     toastTimeout = setTimeout(() => {
-        toastNotification.classList.add('translate-x-[120%]');
+        toastNotification.classList.add('translate-x-full', 'opacity-0');
     }, 4000);
 }
 
@@ -452,6 +452,19 @@ async function createTwoPlayerGame() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(settings),
         });
+
+        if (!res.ok) {
+            if (res.status === 429) {
+                const { error } = await res.json();
+                showToast(error || 'Você está tentando criar jogos muito rápido.');
+            } else {
+                throw new Error(`Erro do servidor: ${res.status}`);
+            }
+            createGameBtn.disabled = false;
+            createGameBtn.textContent = 'Criar e Aguardar';
+            return;
+        }
+
         const data = await res.json();
         if (data.gameId) {
             gameSettingsSection.classList.add('hidden');
