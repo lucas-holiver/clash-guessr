@@ -41,6 +41,12 @@ const tpHintsContainer = document.getElementById('tp-hints-container');
 const turnCounter = document.getElementById('turn-counter');
 const tpBackToMenuBtn = document.getElementById('tp-back-to-menu-btn');
 
+// Elementos Mobile 2P
+const tpShowMyViewBtn = document.getElementById('tp-show-my-view-btn');
+const tpShowOpponentViewBtn = document.getElementById('tp-show-opponent-view-btn');
+const myPlayerPanel = document.getElementById('my-player-panel');
+const opponentPlayerPanel = document.getElementById('opponent-player-panel');
+
 // Elementos do Lobby 2P
 const twoPlayerLobby = document.getElementById('two-player-lobby');
 const backToMenuLobbyBtn = document.getElementById('back-to-menu-lobby-btn');
@@ -110,6 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (code) joinTwoPlayerGame(code);
         else showToast("Por favor, insira um código.");
     });
+
+    // Listeners Mobile 2P
+    tpShowMyViewBtn.addEventListener('click', () => switchTwoPlayerMobileView('my'));
+    tpShowOpponentViewBtn.addEventListener('click', () => switchTwoPlayerMobileView('opponent'));
 });
 
 // --- FUNÇÕES GERAIS ---
@@ -530,6 +540,22 @@ function joinTwoPlayerGame(gameId, isHost = false) {
     };
 }
 
+function switchTwoPlayerMobileView(view) {
+    if (view === 'my') {
+        myPlayerPanel.classList.remove('hidden');
+        opponentPlayerPanel.classList.add('hidden');
+
+        tpShowMyViewBtn.classList.add('active');
+        tpShowOpponentViewBtn.classList.remove('active');
+    } else { // 'opponent'
+        myPlayerPanel.classList.add('hidden');
+        opponentPlayerPanel.classList.remove('hidden');
+        
+        tpShowMyViewBtn.classList.remove('active');
+        tpShowOpponentViewBtn.classList.add('active');
+    }
+}
+
 function prepareTwoPlayerBoard(settings) {
     mainMenu.classList.add('hidden');
     twoPlayerLobby.classList.add('hidden');
@@ -554,6 +580,9 @@ function prepareTwoPlayerBoard(settings) {
     turnCounter.textContent = '1';
     tpHintsContainer.style.display = settings.hints ? 'flex' : 'none';
     if(settings.hints) initializeHints(true);
+
+    // Reset mobile view
+    switchTwoPlayerMobileView('my');
 
     searchInput.focus();
 }

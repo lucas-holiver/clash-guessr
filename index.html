@@ -181,6 +181,13 @@
                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
             </button>
+            
+            <!-- Navegação Mobile 2P -->
+            <div id="tp-mobile-nav" class="mb-4 flex md:hidden border-b-2 border-slate-700">
+                <button id="tp-show-my-view-btn" class="tp-mobile-tab active">Seu Jogo</button>
+                <button id="tp-show-opponent-view-btn" class="tp-mobile-tab">Oponente</button>
+            </div>
+            
             <div id="battle-arena" class="flex flex-col md:flex-row gap-4">
                 
                 <!-- Painel do Jogador -->
@@ -203,7 +210,7 @@
                 </div>
 
                 <!-- Painel do Oponente -->
-                <div id="opponent-player-panel" class="battle-panel">
+                <div id="opponent-player-panel" class="battle-panel hidden md:flex">
                      <h2 class="player-panel-title">Oponente</h2>
                      <div id="opponent-guesses-list" class="guesses-list-2p">
                         <!-- Palpites do oponente aqui -->
