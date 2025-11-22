@@ -652,7 +652,7 @@ function renderGuessRow(targetElement, { feedback }, isTP = false) {
 
     const row = document.createElement('div');
     const animationClass = isTP ? 'tp-guess-row' : 'sp-guess-row';
-    row.className = `${animationClass} bg-slate-900/75 rounded-lg p-1 sm:p-2 grid grid-cols-6 gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50`;
+    row.className = `${animationClass} bg-slate-900/75 rounded-lg p-1 sm:p-2 grid grid-cols-[100px_80px_80px_80px_80px_80px] sm:grid-cols-[140px_110px_110px_110px_110px_110px] gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50`;
     
     const getArrowIcon = (direction) => {
         if (!direction) return '';
@@ -678,7 +678,7 @@ function renderGuessRow(targetElement, { feedback }, isTP = false) {
     const rarityClass = getRarityColor(card.rarity);
 
     row.innerHTML += `
-        <div class="col-span-1 flex flex-col items-center justify-center h-24 sm:h-36 p-1 sm:p-2">
+        <div class="flex flex-col items-center justify-center h-24 sm:h-36 p-1 sm:p-2">
             <img src="${localCardImage}" alt="${card.name}" class="w-10 h-14 sm:w-16 sm:h-20 object-contain drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"/>
             <span class="mt-1 text-[10px] sm:text-base font-clash font-bold text-white drop-shadow-md leading-tight ${rarityClass}">
                 ${card.name}

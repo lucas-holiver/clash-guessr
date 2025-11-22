@@ -261,7 +261,7 @@ input[type="range"]::-moz-range-thumb {
 
 .guesses-list-2p {
     flex-grow: 1;
-    overflow-y: auto;
+    overflow: auto;
     space-y: 0.5rem;
     padding-right: 0.5rem; /* Espaço para a barra de rolagem */
 }
