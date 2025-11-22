@@ -64,6 +64,10 @@ body { font-family: 'Supercell-Magic', sans-serif; }
     animation: victory-modal-show 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
+.confirmation-modal-enter {
+    animation: victory-modal-show 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
 /* --- ANIMAÇÕES DOS BAÚS DE DICAS --- */
 @keyframes wobble {
   0%, 100% { transform: translateX(0) rotate(0); }

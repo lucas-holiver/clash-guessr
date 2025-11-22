@@ -309,24 +309,49 @@ function handleDisconnect(ws) {
         game.turnTimer = null;
     }
 
-    const disconnectedPlayerName = game.players.find(p => p.id === ws.playerId)?.name || 'Jogador';
-    console.log(`${disconnectedPlayerName} desconectado do jogo ${ws.gameId}.`);
-    
-    // Remove o jogador que desconectou
-    game.players = game.players.filter(p => p.id !== ws.playerId);
+    const disconnectedPlayer = game.players.find(p => p.id === ws.playerId);
+    if (!disconnectedPlayer) return;
 
-    if (game.players.length === 0) {
-        console.log(`Jogo ${ws.gameId} está vazio. Deletando.`);
+    const isHost = disconnectedPlayer.name === 'Anfitrião';
+    console.log(`${disconnectedPlayer.name} desconectado do jogo ${ws.gameId}.`);
+
+    if (isHost) {
+        console.log(`Anfitrião desconectou. Encerrando jogo ${ws.gameId} para todos os jogadores.`);
+        // Notifica todos os outros jogadores
+        game.players.forEach(player => {
+            if (player.id !== ws.playerId) {
+                player.ws.send(JSON.stringify({
+                    type: 'hostDisconnected',
+                    message: 'O anfitrião encerrou a partida.'
+                }));
+                player.ws.close();
+            }
+        });
         delete twoPlayerGames[ws.gameId];
     } else {
-        // Se ainda há jogadores, notifique-os
+        // Um oponente desconectou
+        game.players = game.players.filter(p => p.id !== ws.playerId);
+
         if (game.state === 'playing') {
-            game.players[0].ws.send(JSON.stringify({ type: 'opponentDisconnected' }));
-            console.log(`Notificando jogador restante e deletando jogo ${ws.gameId} em andamento.`);
-            delete twoPlayerGames[ws.gameId]; // Encerra o jogo se estava em andamento
+            // Se o jogo estava em andamento, notifica o host e encerra o jogo
+            const host = game.players[0];
+            if (host) {
+                host.ws.send(JSON.stringify({ type: 'opponentDisconnected' }));
+                console.log(`Oponente desconectou durante a partida. Deletando jogo ${ws.gameId}.`);
+            }
+            delete twoPlayerGames[ws.gameId];
         } else { // state is 'waiting'
-            console.log(`Atualizando lobby do jogo ${ws.gameId} para o jogador restante.`);
-            broadcastLobbyUpdate(game);
+            // Se estava no lobby, apenas atualiza
+            const host = game.players[0];
+            if (host) {
+                host.isReady = false; // Garante que o host não fique "pronto" sozinho
+                console.log(`Atualizando lobby do jogo ${ws.gameId} para o anfitrião.`);
+                broadcastLobbyUpdate(game);
+            } else {
+                // Se o host também saiu por algum motivo e só sobrou o oponente, o jogo deve ser deletado
+                 console.log(`Jogo ${ws.gameId} está vazio. Deletando.`);
+                 delete twoPlayerGames[ws.gameId];
+            }
         }
     }
 }

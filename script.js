@@ -79,6 +79,15 @@ const victoryCardName = document.getElementById('victory-card-name');
 const victoryAttempts = document.getElementById('victory-attempts');
 const victoryPlayAgainBtn = document.getElementById('victory-play-again-btn');
 
+// Elementos da Modal de Confirmação
+const confirmationModal = document.getElementById('confirmation-modal');
+const confirmationContent = document.getElementById('confirmation-content');
+const confirmationMessage = document.getElementById('confirmation-message');
+const confirmActionBtn = document.getElementById('confirm-action-btn');
+const cancelActionBtn = document.getElementById('cancel-action-btn');
+let confirmAction = null;
+let confirmationCountdownInterval = null;
+
 // Botões de Menu/Navegação
 const backToMenuInGameBtn = document.getElementById('back-to-menu-ingame-btn');
 const defeatPlayAgainBtn = document.getElementById('defeat-play-again-btn');
@@ -102,12 +111,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Listeners de "Voltar ao Menu"
     backToMenuInGameBtn.addEventListener('click', () => backToMenu());
-    tpBackToMenuBtn.addEventListener('click', () => leaveTwoPlayerGame());
+    tpBackToMenuBtn.addEventListener('click', () => {
+        showConfirmationModal('Tem certeza que deseja sair da partida? Sua partida será encerrada e contará como derrota.', leaveTwoPlayerGame);
+    });
     victoryBackToMenuBtn.addEventListener('click', () => { isTwoPlayerMode ? backToLobby() : backToMenu(); });
     defeatBackToMenuBtn.addEventListener('click', () => { isTwoPlayerMode ? backToLobby() : backToMenu(); });
 
     // Listeners do Lobby
-    backToMenuLobbyBtn.addEventListener('click', backToMenu);
+    backToMenuLobbyBtn.addEventListener('click', () => {
+        showConfirmationModal('Tem certeza que deseja sair do lobby? A sala será desfeita.', backToMenu);
+    });
     showCreateGameBtn.addEventListener('click', () => switchLobbyView('create'));
     showJoinGameBtn.addEventListener('click', () => switchLobbyView('join'));
     maxAttemptsSlider.addEventListener('input', (e) => maxAttemptsValue.textContent = e.target.value);
@@ -128,6 +141,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Listeners Mobile 2P
     tpShowMyViewBtn.addEventListener('click', () => switchTwoPlayerMobileView('my'));
     tpShowOpponentViewBtn.addEventListener('click', () => switchTwoPlayerMobileView('opponent'));
+
+    // Listeners do Modal de Confirmação
+    confirmActionBtn.addEventListener('click', () => {
+        if (typeof confirmAction === 'function') {
+            confirmAction();
+        }
+        hideConfirmationModal();
+    });
+    cancelActionBtn.addEventListener('click', hideConfirmationModal);
 });
 
 // --- FUNÇÕES GERAIS ---
@@ -210,6 +232,44 @@ function resetLobbyUI() {
     gameLobbySection.classList.add('hidden');
     createGameBtn.disabled = false;
     createGameBtn.textContent = 'Criar e Aguardar';
+}
+
+function showConfirmationModal(message, onConfirm) {
+    clearInterval(confirmationCountdownInterval); // Limpa intervalo anterior por segurança
+
+    confirmationMessage.textContent = message;
+    confirmAction = onConfirm;
+
+    confirmActionBtn.disabled = true;
+    let countdown = 3;
+    // Usar .innerHTML para renderizar o span e a classe tabular-nums evita que o botão "pule" de tamanho
+    confirmActionBtn.innerHTML = `Sair <span class="tabular-nums">(${countdown})</span>`;
+
+    confirmationCountdownInterval = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+            confirmActionBtn.innerHTML = `Sair <span class="tabular-nums">(${countdown})</span>`;
+        } else {
+            clearInterval(confirmationCountdownInterval);
+            confirmActionBtn.disabled = false;
+            confirmActionBtn.textContent = 'Sair';
+        }
+    }, 1000);
+
+    confirmationModal.classList.remove('hidden');
+    confirmationContent.classList.add('confirmation-modal-enter');
+}
+
+
+function hideConfirmationModal() {
+    clearInterval(confirmationCountdownInterval);
+    // Garante que o botão volte ao estado original
+    confirmActionBtn.disabled = false;
+    confirmActionBtn.textContent = 'Sair';
+
+    confirmationContent.classList.remove('confirmation-modal-enter');
+    confirmationModal.classList.add('hidden');
+    confirmAction = null;
 }
 
 
@@ -567,6 +627,16 @@ function joinTwoPlayerGame(gameId, isHost = false) {
                         leaveTwoPlayerGame();
                     }
                 }, 3000);
+                break;
+            case 'hostDisconnected':
+                showToast(data.message);
+                if (ws) {
+                    ws.onclose = null;
+                    ws.close();
+                    ws = null;
+                }
+                // Go back to lobby immediately, works for both in-game and waiting lobby screens
+                backToLobby();
                 break;
             case 'error':
                 showToast(data.message);
