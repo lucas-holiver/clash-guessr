@@ -953,28 +953,31 @@ function endTwoPlayerGame(result, secretCard) {
     let cardToShow = null;
     let isWin = false;
 
-    if (result.winner) {
-        if (result.winner === 'me') {
-            isWin = true;
-            title = 'VITÓRIA!';
-            message = `Você venceu na <span class="font-bold text-white">${result.turn}ª</span> rodada!`;
-            cardToShow = result.myCard;
-        } else { // 'opponent' won
-            isWin = false;
-            title = 'DERROTA!';
-            message = `Você perdeu! O oponente acertou em <span class="font-bold text-white">${result.turn}</span> rodadas.`;
-            cardToShow = result.opponentCard; // Show what opponent guessed
-        }
+    // Determine which card to show.
+    // On victory, show the card we guessed. On any other outcome, show the actual secret card.
+    if (result.winner === 'me') {
+        cardToShow = result.myCard;
+    } else {
+        cardToShow = secretCard;
+    }
+
+    // Determine title, message, and styles based on the result.
+    if (result.winner === 'me') {
+        isWin = true;
+        title = 'VITÓRIA!';
+        message = `Você venceu na <span class="font-bold text-white">${result.turn}ª</span> rodada!`;
+    } else if (result.winner === 'opponent') {
+        isWin = false;
+        title = 'DERROTA!';
+        message = `Você perdeu! O oponente acertou em <span class="font-bold text-white">${result.turn}</span> rodadas.`;
     } else if (result.draw) {
         isWin = true; // Visually more like a win/neutral outcome than a loss
         title = 'EMPATE!';
         message = `Ambos acertaram! A carta era <span class="font-bold text-white">${secretCard.name}</span>`;
-        cardToShow = secretCard;
     } else { // Loss by attempts limit
         isWin = false;
         title = 'DERROTA!';
         message = `Limite de tentativas atingido! A carta era <span class="font-bold text-white">${secretCard.name}</span>.`;
-        cardToShow = secretCard;
     }
 
     if (!cardToShow) { // Fallback, should not happen
