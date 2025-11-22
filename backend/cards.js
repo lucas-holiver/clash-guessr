@@ -6,7 +6,7 @@ const CLASH_ROYALE_CARDS = [
   { name: 'Goblins', elixir: 2, rarity: 'Comum', type: 'Tropa', arena: 1, evolution: false },
   { name: 'Goblins Lanceiros', elixir: 2, rarity: 'Comum', type: 'Tropa', arena: 1, evolution: false },
   { name: 'Bombardeiro', elixir: 2, rarity: 'Comum', type: 'Tropa', arena: 2, evolution: true },
-  { name: 'Berserker', elixir: 2, rarity: 'Comum', type: 'Tropa', arena: 9, evolution: true },
+  { name: 'Berserker', elixir: 2, rarity: 'Comum', type: 'Tropa', arena: 9, evolution: false },
   { name: 'Arqueiras', elixir: 3, rarity: 'Comum', type: 'Tropa', arena: 0, evolution: true },
   { name: 'Cavaleiro', elixir: 3, rarity: 'Comum', type: 'Tropa', arena: 0, evolution: true },
   { name: 'Gangue de Goblins', elixir: 3, rarity: 'Comum', type: 'Tropa', arena: 9, evolution: false },

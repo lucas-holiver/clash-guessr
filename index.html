@@ -158,8 +158,8 @@
 
             <!-- Grid de Palpites -->
             <section class="w-full overflow-x-auto">
-                <div>
-                    <div class="grid grid-cols-[100px_80px_80px_80px_80px_80px] sm:grid-cols-[140px_110px_110px_110px_110px_110px] gap-1 sm:gap-2 text-center font-bold text-slate-300 p-1 sm:p-2 text-xs sm:text-sm">
+                <div class="min-w-[640px]">
+                    <div class="grid grid-cols-[1.5fr_repeat(5,1fr)] gap-1 sm:gap-2 text-center font-bold text-slate-300 p-1 sm:p-2 text-xs sm:text-sm">
                         <span>Carta</span>
                         <span>Custo</span>
                         <span>Raridade</span>
@@ -183,12 +183,12 @@
             </button>
             
             <!-- Navegação Mobile 2P -->
-            <div id="tp-mobile-nav" class="mb-4 flex md:hidden border-b-2 border-slate-700">
+            <div id="tp-mobile-nav" class="mb-4 flex lg:hidden border-b-2 border-slate-700">
                 <button id="tp-show-my-view-btn" class="tp-mobile-tab active">Seu Jogo</button>
                 <button id="tp-show-opponent-view-btn" class="tp-mobile-tab">Oponente</button>
             </div>
             
-            <div id="battle-arena" class="flex flex-col md:flex-row gap-4">
+            <div id="battle-arena" class="flex flex-col lg:flex-row gap-4">
                 
                 <!-- Painel do Jogador -->
                 <div id="my-player-panel" class="battle-panel">
@@ -210,7 +210,7 @@
                 </div>
 
                 <!-- Painel do Oponente -->
-                <div id="opponent-player-panel" class="battle-panel hidden md:flex">
+                <div id="opponent-player-panel" class="battle-panel hidden lg:flex">
                      <h2 class="player-panel-title">Oponente</h2>
                      <div id="opponent-guesses-list" class="guesses-list-2p">
                         <!-- Palpites do oponente aqui -->

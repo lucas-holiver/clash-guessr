@@ -652,7 +652,6 @@ function renderGuessRow(targetElement, { feedback }, isTP = false) {
 
     const row = document.createElement('div');
     const animationClass = isTP ? 'tp-guess-row' : 'sp-guess-row';
-    row.className = `${animationClass} bg-slate-900/75 rounded-lg p-1 sm:p-2 grid grid-cols-[100px_80px_80px_80px_80px_80px] sm:grid-cols-[140px_110px_110px_110px_110px_110px] gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50`;
     
     const getArrowIcon = (direction) => {
         if (!direction) return '';
@@ -677,13 +676,16 @@ function renderGuessRow(targetElement, { feedback }, isTP = false) {
 
     const rarityClass = getRarityColor(card.rarity);
 
-    row.innerHTML += `
+    // --- Building blocks for cells ---
+    const cardCell = `
         <div class="flex flex-col items-center justify-center h-24 sm:h-36 p-1 sm:p-2">
             <img src="${localCardImage}" alt="${card.name}" class="w-10 h-14 sm:w-16 sm:h-20 object-contain drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"/>
             <span class="mt-1 text-[10px] sm:text-base font-clash font-bold text-white drop-shadow-md leading-tight ${rarityClass}">
                 ${card.name}
             </span>
-        </div>
+        </div>`;
+
+    const elixirCell = `
         <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md font-bold text-lg sm:text-3xl border-2 transition-all duration-300 overflow-hidden ${getStatusClasses(comp.elixir)}">
             ${comp.elixir !== 'correct' ? 
                 `<div class="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm">
@@ -694,7 +696,9 @@ function renderGuessRow(targetElement, { feedback }, isTP = false) {
                 <img src="https://cdn.royaleapi.com/static/img/ui/elixir.png" class="w-5 h-5 sm:w-8 sm:h-8 mb-1"/>
                 <span>${card.elixir}</span>
             </div>
-        </div>
+        </div>`;
+        
+    const rarityCell = `
         <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 transition-all duration-300 overflow-hidden ${getStatusClasses(comp.rarity)}">
              ${comp.rarity !== 'correct' ? 
                 `<div class="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm">
@@ -704,13 +708,17 @@ function renderGuessRow(targetElement, { feedback }, isTP = false) {
             <span class="text-xs sm:text-lg font-bold transition-opacity duration-300 ${comp.rarity !== 'correct' ? 'group-hover:opacity-0' : ''} ${rarityClass}">
                 ${card.rarity}
             </span>
-        </div>
+        </div>`;
+
+    const typeCell = `
         <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 font-bold text-lg overflow-hidden ${getStatusClasses(comp.type)}">
             <img src="${getTypeIcon(card.type)}" class="w-10 h-10 sm:w-16 sm:h-16 object-contain transition-opacity duration-300 group-hover:opacity-0">
             <span class="absolute drop-shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-clash text-sm sm:text-xl">
                 ${card.type}
             </span>
-        </div>
+        </div>`;
+
+    const arenaCell = `
         <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 rounded-md border-2 overflow-hidden ${getStatusClasses(comp.arena)}">
             <img src="${arenaUrl}" class="w-full h-full object-cover rounded opacity-80 group-hover:opacity-20 transition-all duration-300">
             <div class="absolute inset-0 flex flex-col items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/60 backdrop-blur-[2px]">
@@ -719,15 +727,30 @@ function renderGuessRow(targetElement, { feedback }, isTP = false) {
                     ${arenaName}
                 </span>
             </div>
-        </div>
+        </div>`;
+        
+    const evolutionCell = `
         <div class="h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 ${getStatusClasses(comp.evolution)}">
             ${card.evolution ? 
                 `<img src="${localEvoImage}" class="h-16 sm:h-24 w-auto object-contain drop-shadow-lg" alt="Evo">` 
                 : 
                 '<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 sm:w-12 sm:h-12 text-red-500/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>'
             }
-        </div>
-    `;
+        </div>`;
+
+    let gridClass = '';
+    let innerHTML = '';
+
+    if (isTP) {
+        gridClass = 'grid-cols-[1.5fr_1fr_1fr_1fr]';
+        innerHTML = cardCell + elixirCell + rarityCell + typeCell;
+    } else {
+        gridClass = 'grid-cols-[1.5fr_repeat(5,1fr)]';
+        innerHTML = cardCell + elixirCell + rarityCell + typeCell + arenaCell + evolutionCell;
+    }
+    
+    row.className = `${animationClass} bg-slate-900/75 rounded-lg p-1 sm:p-2 grid ${gridClass} gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50`;
+    row.innerHTML = innerHTML;
 
     targetElement.prepend(row);
     return row;

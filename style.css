@@ -252,7 +252,7 @@ input[type="range"]::-moz-range-thumb {
 
 .central-panel {
     flex: 0 0 auto; /* Não cresce, não encolhe, baseia no conteúdo */
-    width: 200px; /* Largura fixa para o painel central */
+    width: 160px; /* Largura fixa para o painel central */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -290,7 +290,7 @@ input[type="range"]::-moz-range-thumb {
 
 
 /* Responsividade para a arena de batalha */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
     #battle-arena {
         flex-direction: column;
     }
