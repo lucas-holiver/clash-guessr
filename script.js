@@ -296,6 +296,7 @@ function prepareGameBoard() {
     guessesList.innerHTML = '';
     searchInput.value = '';
     searchSection.classList.remove('hidden');
+    searchInput.disabled = false; // Garante que a barra de busca esteja sempre ativa
     gameOverMsg.classList.add('hidden');
     hideGameNotification();
     initializeHints();
@@ -630,8 +631,14 @@ function joinTwoPlayerGame(gameId, isHost = false) {
                 endTwoPlayerGame(data.result, data.secretCard);
                 break;
             case 'opponentDisconnected':
-                showGameNotification('Oponente desconectou. A partida foi encerrada.', true);
+                showToast('Oponente desconectou. Retornando ao lobby...');
                 searchInput.disabled = true;
+                setTimeout(() => {
+                    // Only navigate if the user is still on the game screen
+                    if (!gameContent.classList.contains('hidden')) {
+                        leaveTwoPlayerGame();
+                    }
+                }, 3000); // Wait 3 seconds for the user to read the message
                 break;
             case 'error':
                 showToast(data.message);
