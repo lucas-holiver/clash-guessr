@@ -15,22 +15,31 @@ let isTwoPlayerMode = false;
 let ws = null;
 
 
-// Elementos DOM
+// Elementos DOM Globais
 const searchInput = document.getElementById('search-input');
 const suggestionsList = document.getElementById('suggestions-list');
-const guessesList = document.getElementById('guesses-list');
 const searchSection = document.getElementById('search-section');
 const gameOverMsg = document.getElementById('game-over-msg');
 const endTitle = document.getElementById('end-title');
-const hintsContainer = document.getElementById('hints-container');
 const gameNotification = document.getElementById('game-notification');
 const gameNotificationText = document.getElementById('game-notification-text');
-
-// Elementos do Menu e Conteúdo
 const mainMenu = document.getElementById('main-menu');
-const gameContent = document.getElementById('game-content');
 const onePlayerBtn = document.getElementById('one-player-btn');
 const twoPlayerBtn = document.getElementById('two-player-btn');
+
+// Elementos Single Player
+const singlePlayerGameContent = document.getElementById('single-player-game-content');
+const spGuessesList = document.getElementById('sp-guesses-list');
+const spHintsContainer = document.getElementById('sp-hints-container');
+const spAttemptsCounter = document.getElementById('sp-attempts-counter');
+
+// Elementos Two Player
+const twoPlayerGameContent = document.getElementById('two-player-game-content');
+const myGuessesList = document.getElementById('my-guesses-list');
+const opponentGuessesList = document.getElementById('opponent-guesses-list');
+const tpHintsContainer = document.getElementById('tp-hints-container');
+const turnCounter = document.getElementById('turn-counter');
+const tpBackToMenuBtn = document.getElementById('tp-back-to-menu-btn');
 
 // Elementos do Lobby 2P
 const twoPlayerLobby = document.getElementById('two-player-lobby');
@@ -61,7 +70,7 @@ const victoryCardName = document.getElementById('victory-card-name');
 const victoryAttempts = document.getElementById('victory-attempts');
 const victoryPlayAgainBtn = document.getElementById('victory-play-again-btn');
 
-// Novos botões
+// Botões de Menu/Navegação
 const backToMenuInGameBtn = document.getElementById('back-to-menu-ingame-btn');
 const defeatPlayAgainBtn = document.getElementById('defeat-play-again-btn');
 const defeatBackToMenuBtn = document.getElementById('defeat-back-to-menu-btn');
@@ -76,16 +85,19 @@ let toastTimeout;
 document.addEventListener('DOMContentLoaded', () => {
     fetchCards();
     
+    // Listeners do Menu Principal e Fim de Jogo
     onePlayerBtn.addEventListener('click', () => { isTwoPlayerMode = false; startNewGame(); });
     twoPlayerBtn.addEventListener('click', showTwoPlayerLobby);
     victoryPlayAgainBtn.addEventListener('click', () => { isTwoPlayerMode ? backToLobby() : startNewGame(); });
     defeatPlayAgainBtn.addEventListener('click', () => { isTwoPlayerMode ? backToLobby() : startNewGame(); });
-
-    backToMenuInGameBtn.addEventListener('click', () => { isTwoPlayerMode ? leaveTwoPlayerGame() : backToMenu(); });
+    
+    // Listeners de "Voltar ao Menu"
+    backToMenuInGameBtn.addEventListener('click', () => backToMenu());
+    tpBackToMenuBtn.addEventListener('click', () => leaveTwoPlayerGame());
     victoryBackToMenuBtn.addEventListener('click', () => { isTwoPlayerMode ? backToLobby() : backToMenu(); });
     defeatBackToMenuBtn.addEventListener('click', () => { isTwoPlayerMode ? backToLobby() : backToMenu(); });
 
-    // Lobby Listeners
+    // Listeners do Lobby
     backToMenuLobbyBtn.addEventListener('click', backToMenu);
     showCreateGameBtn.addEventListener('click', () => switchLobbyView('create'));
     showJoinGameBtn.addEventListener('click', () => switchLobbyView('join'));
@@ -148,10 +160,13 @@ function backToMenu() {
         ws = null;
     }
     mainMenu.classList.remove('hidden');
-    gameContent.classList.add('hidden');
+    singlePlayerGameContent.classList.add('hidden');
+    twoPlayerGameContent.classList.add('hidden');
     twoPlayerLobby.classList.add('hidden');
     victoryModal.classList.add('hidden');
     victoryContent.classList.remove('victory-modal-enter');
+    // Anexa a busca de volta ao corpo para não se perder
+    document.body.appendChild(searchSection); 
     resetLobbyUI();
 }
 
@@ -161,9 +176,11 @@ function backToLobby() {
         ws = null;
     }
     twoPlayerLobby.classList.remove('hidden');
-    gameContent.classList.add('hidden');
+    singlePlayerGameContent.classList.add('hidden');
+    twoPlayerGameContent.classList.add('hidden');
     victoryModal.classList.add('hidden');
     victoryContent.classList.remove('victory-modal-enter');
+    document.body.appendChild(searchSection);
     resetLobbyUI();
     fetchPublicGames();
 }
@@ -216,6 +233,81 @@ searchInput.addEventListener('input', (e) => {
     }
 });
 
+document.addEventListener('click', (e) => {
+    if (!searchSection.contains(e.target)) {
+        suggestionsList.classList.add('hidden');
+    }
+});
+
+
+// --- LÓGICA DO JOGO ---
+
+async function makeGuess(cardName) {
+    if (guessedCards.has(cardName)) return;
+
+    suggestionsList.classList.add('hidden');
+    searchInput.value = '';
+    guessedCards.add(cardName);
+    
+    if (isTwoPlayerMode) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'guess', guessName: cardName }));
+            searchInput.disabled = true;
+            showGameNotification("Aguardando o palpite do oponente...");
+        }
+    } else {
+        try {
+            const res = await fetch(`${API_URL}/guess`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: currentGameId, guessName: cardName })
+            });
+            
+            if (!res.ok) return;
+
+            const { feedback, hints: receivedHints, attempts } = await res.json();
+            
+            updateHints(receivedHints);
+            renderGuessRow(spGuessesList, { feedback });
+            renderAttempts(attempts.current, attempts.max);
+
+            if (feedback.isWin) {
+                endGame(true, feedback.card);
+            } else if (feedback.isGameOver) {
+                endGame(false, feedback.secretCard);
+            }
+
+        } catch (err) { 
+            console.error("Erro no palpite", err);
+            guessedCards.delete(cardName); 
+        }
+    }
+}
+
+function initializeHints(isTP = false) {
+    const container = isTP ? tpHintsContainer : spHintsContainer;
+    hints = [
+        { steps: 3, label: 'Tipo', value: null, state: 'locked' },
+        { steps: 6, label: 'Raridade', value: null, state: 'locked' },
+        { steps: 10, label: 'Elixir', value: null, state: 'locked' }
+    ];
+    renderHints(container);
+}
+
+function updateHints(receivedHints, isTP = false) {
+    const container = isTP ? tpHintsContainer : spHintsContainer;
+    if (receivedHints && receivedHints.length > 0) {
+        receivedHints.forEach(receivedHint => {
+            const hintToUpdate = hints.find(h => h.label === receivedHint.label);
+            if (hintToUpdate && hintToUpdate.state === 'locked') {
+                hintToUpdate.state = 'ready';
+                hintToUpdate.value = receivedHint.value;
+            }
+        });
+        renderHints(container);
+    }
+}
+
 // --- MODO UM JOGADOR ---
 
 function startMainMenuCooldown() {
@@ -241,6 +333,7 @@ function startMainMenuCooldown() {
 }
 
 async function startNewGame(event) {
+    isTwoPlayerMode = false;
     const clickedButton = event?.currentTarget || onePlayerBtn;
     const allStartButtons = [onePlayerBtn, defeatPlayAgainBtn, victoryPlayAgainBtn];
     const originalButtonHTML = clickedButton.innerHTML;
@@ -264,7 +357,7 @@ async function startNewGame(event) {
         const data = await res.json();
         currentGameId = data.id;
         
-        prepareGameBoard();
+        prepareSinglePlayerBoard(data.maxAttempts);
 
         if (clickedButton === onePlayerBtn) {
             startMainMenuCooldown();
@@ -285,86 +378,228 @@ async function startNewGame(event) {
     }
 }
 
-function prepareGameBoard() {
+function prepareSinglePlayerBoard(maxAttempts) {
     mainMenu.classList.add('hidden');
     twoPlayerLobby.classList.add('hidden');
-    gameContent.classList.remove('hidden');
+    twoPlayerGameContent.classList.add('hidden');
+    singlePlayerGameContent.classList.remove('hidden');
+    
     victoryModal.classList.add('hidden');
     victoryContent.classList.remove('victory-modal-enter');
 
-    guessedCards.clear();
-    guessesList.innerHTML = '';
-    searchInput.value = '';
+    // Mover a seção de busca para dentro do container do jogo 1P
+    singlePlayerGameContent.insertBefore(searchSection, gameNotification);
     searchSection.classList.remove('hidden');
-    searchInput.disabled = false; // Garante que a barra de busca esteja sempre ativa
+
+    guessedCards.clear();
+    spGuessesList.innerHTML = '';
+    searchInput.value = '';
+    searchInput.disabled = false;
     gameOverMsg.classList.add('hidden');
     hideGameNotification();
-    initializeHints();
-    renderHints();
+    
+    initializeHints(false);
+    renderAttempts(0, maxAttempts);
     searchInput.focus();
 }
 
-async function makeGuess(cardName) {
-    if (guessedCards.has(cardName)) return;
+// --- MODO DOIS JOGADORES (WEBSOCKET) ---
 
-    suggestionsList.classList.add('hidden');
-    searchInput.value = '';
-    guessedCards.add(cardName);
-    
-    if (isTwoPlayerMode) {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'guess', guessName: cardName }));
-            searchInput.disabled = true;
-            showGameNotification("Aguardando o palpite do oponente...");
-        }
+function showTwoPlayerLobby() {
+    mainMenu.classList.add('hidden');
+    twoPlayerLobby.classList.remove('hidden');
+    fetchPublicGames();
+}
+
+function switchLobbyView(view) {
+    if (view === 'create') {
+        createGameView.classList.remove('hidden');
+        joinGameView.classList.add('hidden');
+        showCreateGameBtn.classList.add('active');
+        showJoinGameBtn.classList.remove('active');
     } else {
-        try {
-            const res = await fetch(`${API_URL}/guess`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: currentGameId, guessName: cardName })
-            });
-            
-            if (!res.ok) return;
-
-            const { feedback, hints: receivedHints } = await res.json();
-            
-            updateHints(receivedHints);
-            renderGuessRow({ feedback });
-
-            if (feedback.isWin) {
-                endGame(true, feedback.card);
-            } else if (feedback.isGameOver) {
-                endGame(false, feedback.secretCard);
-            }
-
-        } catch (err) { 
-            console.error("Erro no palpite", err);
-            guessedCards.delete(cardName); 
-        }
+        createGameView.classList.add('hidden');
+        joinGameView.classList.remove('hidden');
+        showCreateGameBtn.classList.remove('active');
+        showJoinGameBtn.classList.add('active');
     }
 }
 
+async function createTwoPlayerGame() {
+    createGameBtn.disabled = true;
+    createGameBtn.textContent = 'Criando...';
+    
+    const settings = {
+        maxAttempts: parseInt(maxAttemptsSlider.value, 10),
+        hints: document.getElementById('hints-enabled-toggle').checked,
+        isPublic: document.getElementById('is-public-toggle').checked,
+    };
 
-function initializeHints() {
-    hints = [
-        { steps: 3, label: 'Tipo', value: null, state: 'locked' },
-        { steps: 6, label: 'Raridade', value: null, state: 'locked' },
-        { steps: 10, label: 'Elixir', value: null, state: 'locked' }
-    ];
-}
-
-function updateHints(receivedHints) {
-    if (receivedHints && receivedHints.length > 0) {
-        receivedHints.forEach(receivedHint => {
-            const hintToUpdate = hints.find(h => h.label === receivedHint.label);
-            if (hintToUpdate && hintToUpdate.state === 'locked') {
-                hintToUpdate.state = 'ready';
-                hintToUpdate.value = receivedHint.value;
-            }
+    try {
+        const res = await fetch(`${API_URL}/game/create-two-player`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings),
         });
-        renderHints();
+        const data = await res.json();
+        if (data.gameId) {
+            gameSettingsSection.classList.add('hidden');
+            gameCodeDisplay.textContent = data.gameId;
+            gameCodeSection.classList.remove('hidden');
+            waitingForPlayerMsg.classList.remove('hidden');
+            joinTwoPlayerGame(data.gameId, true);
+        }
+    } catch (err) {
+        showToast('Erro ao criar o jogo. Tente novamente.');
+        createGameBtn.disabled = false;
+        createGameBtn.textContent = 'Criar e Aguardar';
     }
+}
+
+function joinTwoPlayerGame(gameId, isHost = false) {
+    isTwoPlayerMode = true;
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${protocol}://${window.location.host}`;
+    
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'join', gameId }));
+    };
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        switch(data.type) {
+            case 'gameStart':
+                currentGameId = data.gameId;
+                prepareTwoPlayerBoard(data.settings);
+                break;
+            case 'turnResult':
+                hideGameNotification();
+                searchInput.disabled = false;
+                searchInput.focus();
+                
+                turnCounter.textContent = data.turn + 1;
+                
+                // Renderização sincronizada
+                const myRow = renderGuessRow(myGuessesList, { feedback: data.myFeedback }, true);
+                const opponentRow = renderGuessRow(opponentGuessesList, { feedback: data.opponentFeedback }, true);
+                
+                // Força o reflow para a animação funcionar
+                void myRow.offsetWidth;
+                void opponentRow.offsetWidth;
+
+                myRow.classList.add('reveal');
+                opponentRow.classList.add('reveal');
+                
+                updateHints(data.hints, true);
+                break;
+            case 'gameOver':
+                endTwoPlayerGame(data.result, data.secretCard);
+                break;
+            case 'opponentDisconnected':
+                showToast('Oponente desconectou. Retornando ao lobby...');
+                searchInput.disabled = true;
+                setTimeout(() => {
+                    if (!twoPlayerGameContent.classList.contains('hidden')) {
+                        leaveTwoPlayerGame();
+                    }
+                }, 3000);
+                break;
+            case 'error':
+                showToast(data.message);
+                if (!isHost) {
+                    ws.close();
+                    backToLobby();
+                }
+                break;
+        }
+    };
+
+    ws.onclose = () => {
+        if (!singlePlayerGameContent.classList.contains('hidden') || !twoPlayerGameContent.classList.contains('hidden')) {
+             if (victoryModal.classList.contains('hidden') && gameOverMsg.classList.contains('hidden')) {
+                showGameNotification('Conexão perdida com o servidor.', true);
+             }
+        }
+    };
+
+    ws.onerror = (err) => {
+        console.error('WebSocket Error:', err);
+        showToast('Erro de conexão com o servidor.');
+    };
+}
+
+function prepareTwoPlayerBoard(settings) {
+    mainMenu.classList.add('hidden');
+    twoPlayerLobby.classList.add('hidden');
+    singlePlayerGameContent.classList.add('hidden');
+    twoPlayerGameContent.classList.remove('hidden');
+
+    victoryModal.classList.add('hidden');
+    victoryContent.classList.remove('victory-modal-enter');
+    
+    // Mover a seção de busca para dentro do container do jogo 2P
+    myGuessesList.parentElement.appendChild(searchSection);
+    searchSection.classList.remove('hidden');
+
+    guessedCards.clear();
+    myGuessesList.innerHTML = '';
+    opponentGuessesList.innerHTML = '';
+    searchInput.value = '';
+    searchInput.disabled = false;
+    gameOverMsg.classList.add('hidden');
+    hideGameNotification();
+    
+    turnCounter.textContent = '1';
+    tpHintsContainer.style.display = settings.hints ? 'flex' : 'none';
+    if(settings.hints) initializeHints(true);
+
+    searchInput.focus();
+}
+
+
+async function fetchPublicGames() {
+    try {
+        const res = await fetch(`${API_URL}/public-games`);
+        const games = await res.json();
+        publicGamesList.innerHTML = '';
+
+        if (games.length === 0) {
+            publicGamesList.innerHTML = '<li id="no-public-games" class="text-center text-slate-400 p-4">Nenhuma partida pública encontrada.</li>';
+        } else {
+            games.forEach(game => {
+                const li = document.createElement('li');
+                li.className = 'public-game-item';
+                li.innerHTML = `
+                    <span>
+                        Dicas: ${game.settings.hints ? '✅' : '❌'} | 
+                        Tentativas: ${game.settings.maxAttempts}
+                    </span>
+                    <button class="join-public-btn">Entrar</button>
+                `;
+                li.querySelector('.join-public-btn').addEventListener('click', () => joinTwoPlayerGame(game.id));
+                publicGamesList.appendChild(li);
+            });
+        }
+    } catch(err) {
+        console.error('Erro ao buscar jogos públicos', err);
+        publicGamesList.innerHTML = '<li class="text-center text-red-400 p-4">Erro ao carregar partidas.</li>';
+    }
+}
+
+function copyGameCode() {
+    navigator.clipboard.writeText(gameCodeDisplay.textContent)
+        .then(() => showToast('Código copiado!'))
+        .catch(() => showToast('Falha ao copiar o código.'));
+}
+
+function leaveTwoPlayerGame() {
+    if (ws) {
+        ws.close();
+        ws = null;
+    }
+    backToLobby();
 }
 
 // --- RENDERIZAÇÃO ---
@@ -377,7 +612,7 @@ function getRarityColor(r) {
     return 'text-white';
 }
 
-function renderGuessRow({ feedback, playerLabel }) {
+function renderGuessRow(targetElement, { feedback }, isTP = false) {
     const card = feedback.card;
     const comp = feedback.comparisons;
     const slug = getCardImageSlug(card.name);
@@ -387,12 +622,9 @@ function renderGuessRow({ feedback, playerLabel }) {
     const arenaName = `Arena ${card.arena}`;
 
     const row = document.createElement('div');
-    row.className = `guess-row bg-slate-900/75 rounded-lg p-1 sm:p-2 grid grid-cols-6 gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50 relative`;
-
-    if (playerLabel) {
-        row.innerHTML += `<div class="player-label">${playerLabel}</div>`;
-    }
-
+    const animationClass = isTP ? 'tp-guess-row' : 'sp-guess-row';
+    row.className = `${animationClass} bg-slate-900/75 rounded-lg p-1 sm:p-2 grid grid-cols-6 gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50`;
+    
     const getArrowIcon = (direction) => {
         if (!direction) return '';
         const d = direction === 'higher' ? 'M12 4l8 8h-6v8h-4v-8H4l8-8z' : 'M12 20l-8-8h6V4h4v8h6l-8 8z';
@@ -468,11 +700,12 @@ function renderGuessRow({ feedback, playerLabel }) {
         </div>
     `;
 
-    guessesList.prepend(row);
+    targetElement.prepend(row);
+    return row;
 }
 
-function renderHints() {
-    hintsContainer.innerHTML = '';
+function renderHints(container) {
+    container.innerHTML = '';
     const chestImg = "https://cdn.royaleapi.com/static/img/chests/chest-wooden.png";
 
     hints.forEach(h => {
@@ -498,11 +731,25 @@ function renderHints() {
             const wrapper = div.querySelector('.hint-chest-wrapper');
             wrapper.addEventListener('click', () => {
                 h.state = 'revealed';
-                renderHints();
+                renderHints(container);
             }, { once: true });
         }
-        hintsContainer.appendChild(div);
+        container.appendChild(div);
     });
+}
+
+function renderAttempts(current, max) {
+    spAttemptsCounter.innerHTML = '';
+    const crownEmpty = 'https://cdn.royaleapi.com/static/img/ui/crown-empty.png';
+    const crownFilled = 'https://cdn.royaleapi.com/static/img/ui/crown-blue.png';
+    
+    for (let i = 0; i < max; i++) {
+        const img = document.createElement('img');
+        img.src = i < (max - current) ? crownFilled : crownEmpty;
+        img.className = 'w-6 h-6 sm:w-8 sm:h-8';
+        img.title = `${max - i} tentativas restantes`;
+        spAttemptsCounter.appendChild(img);
+    }
 }
 
 // --- FIM DE JOGO ---
@@ -526,186 +773,6 @@ function endGame(win, card) {
         gameOverMsg.classList.remove('hidden');
         endTitle.innerHTML = `<div class="text-4xl mb-2">💀</div><span class="text-red-500 text-3xl font-clash-title">Derrota!</span><br><span class="text-slate-300 text-lg">A carta era <span class="text-yellow-400 font-bold">${card ? card.name : '???'}</span></span>`;
     }
-}
-
-document.addEventListener('click', (e) => {
-    if (!searchSection.contains(e.target)) {
-        suggestionsList.classList.add('hidden');
-    }
-});
-
-
-// --- MODO DOIS JOGADORES (WEBSOCKET) ---
-
-function showTwoPlayerLobby() {
-    mainMenu.classList.add('hidden');
-    twoPlayerLobby.classList.remove('hidden');
-    fetchPublicGames();
-}
-
-function switchLobbyView(view) {
-    if (view === 'create') {
-        createGameView.classList.remove('hidden');
-        joinGameView.classList.add('hidden');
-        showCreateGameBtn.classList.add('active');
-        showJoinGameBtn.classList.remove('active');
-    } else {
-        createGameView.classList.add('hidden');
-        joinGameView.classList.remove('hidden');
-        showCreateGameBtn.classList.remove('active');
-        showJoinGameBtn.classList.add('active');
-    }
-}
-
-async function createTwoPlayerGame() {
-    createGameBtn.disabled = true;
-    createGameBtn.textContent = 'Criando...';
-    
-    const settings = {
-        maxAttempts: parseInt(maxAttemptsSlider.value, 10),
-        hints: document.getElementById('hints-enabled-toggle').checked,
-        isPublic: document.getElementById('is-public-toggle').checked,
-    };
-
-    try {
-        const res = await fetch(`${API_URL}/game/create-two-player`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(settings),
-        });
-        const data = await res.json();
-        if (data.gameId) {
-            gameSettingsSection.classList.add('hidden');
-            gameCodeDisplay.textContent = data.gameId;
-            gameCodeSection.classList.remove('hidden');
-            waitingForPlayerMsg.classList.remove('hidden');
-            joinTwoPlayerGame(data.gameId, true);
-        }
-    } catch (err) {
-        showToast('Erro ao criar o jogo. Tente novamente.');
-        createGameBtn.disabled = false;
-        createGameBtn.textContent = 'Criar e Aguardar';
-    }
-}
-
-function joinTwoPlayerGame(gameId, isHost = false) {
-    isTwoPlayerMode = true;
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUrl = `${protocol}://${window.location.host}`;
-    
-    ws = new WebSocket(wsUrl);
-
-    ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'join', gameId }));
-    };
-
-    ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        switch(data.type) {
-            case 'gameStart':
-                currentGameId = data.gameId;
-                prepareGameBoard();
-                hintsContainer.style.display = data.settings.hints ? 'flex' : 'none';
-                break;
-            case 'turnResult':
-                hideGameNotification();
-                searchInput.disabled = false;
-                searchInput.focus();
-
-                // Limpa o placeholder do turno
-                const turnPlaceholder = document.getElementById(`turn-${data.turn}`);
-                if (turnPlaceholder) turnPlaceholder.remove();
-                
-                // Adiciona o cabeçalho do turno
-                const turnHeader = document.createElement('h3');
-                turnHeader.className = "text-center font-bold text-yellow-400 my-2";
-                turnHeader.textContent = `Turno ${data.turn}`;
-                guessesList.prepend(turnHeader);
-                
-                renderGuessRow({ feedback: data.opponentFeedback, playerLabel: 'Oponente'});
-                renderGuessRow({ feedback: data.myFeedback, playerLabel: 'Você' });
-
-                updateHints(data.hints);
-                break;
-            case 'gameOver':
-                endTwoPlayerGame(data.result, data.secretCard);
-                break;
-            case 'opponentDisconnected':
-                showToast('Oponente desconectou. Retornando ao lobby...');
-                searchInput.disabled = true;
-                setTimeout(() => {
-                    // Only navigate if the user is still on the game screen
-                    if (!gameContent.classList.contains('hidden')) {
-                        leaveTwoPlayerGame();
-                    }
-                }, 3000); // Wait 3 seconds for the user to read the message
-                break;
-            case 'error':
-                showToast(data.message);
-                if (!isHost) {
-                    ws.close();
-                    backToLobby();
-                }
-                break;
-        }
-    };
-
-    ws.onclose = () => {
-        if (!gameContent.classList.contains('hidden')) {
-             if (!victoryModal.classList.contains('hidden') && !gameOverMsg.classList.contains('hidden')) {
-                showGameNotification('Conexão perdida com o servidor.', true);
-             }
-        }
-    };
-
-    ws.onerror = (err) => {
-        console.error('WebSocket Error:', err);
-        showToast('Erro de conexão com o servidor.');
-    };
-}
-
-
-async function fetchPublicGames() {
-    try {
-        const res = await fetch(`${API_URL}/public-games`);
-        const games = await res.json();
-        publicGamesList.innerHTML = '';
-
-        if (games.length === 0) {
-            publicGamesList.innerHTML = '<li id="no-public-games" class="text-center text-slate-400 p-4">Nenhuma partida pública encontrada.</li>';
-        } else {
-            games.forEach(game => {
-                const li = document.createElement('li');
-                li.className = 'public-game-item';
-                li.innerHTML = `
-                    <span>
-                        Dicas: ${game.settings.hints ? '✅' : '❌'} | 
-                        Tentativas: ${game.settings.maxAttempts}
-                    </span>
-                    <button class="join-public-btn">Entrar</button>
-                `;
-                li.querySelector('.join-public-btn').addEventListener('click', () => joinTwoPlayerGame(game.id));
-                publicGamesList.appendChild(li);
-            });
-        }
-    } catch(err) {
-        console.error('Erro ao buscar jogos públicos', err);
-        publicGamesList.innerHTML = '<li class="text-center text-red-400 p-4">Erro ao carregar partidas.</li>';
-    }
-}
-
-function copyGameCode() {
-    navigator.clipboard.writeText(gameCodeDisplay.textContent)
-        .then(() => showToast('Código copiado!'))
-        .catch(() => showToast('Falha ao copiar o código.'));
-}
-
-function leaveTwoPlayerGame() {
-    if (ws) {
-        ws.close();
-        ws = null;
-    }
-    backToLobby();
 }
 
 function endTwoPlayerGame(result, secretCard) {
@@ -733,8 +800,10 @@ function endTwoPlayerGame(result, secretCard) {
     } else if (result.draw) {
          gameOverMsg.classList.remove('hidden');
          endTitle.innerHTML = `<div class="text-4xl mb-2">🤝</div><span class="text-yellow-400 text-3xl font-clash-title">Empate!</span><br><span class="text-slate-300 text-lg">Ambos acertaram! A carta era <span class="font-bold">${secretCard.name}</span></span>`;
+         singlePlayerGameContent.insertBefore(gameOverMsg, spHintsContainer);
     } else { // Derrota por limite de tentativas
         gameOverMsg.classList.remove('hidden');
         endTitle.innerHTML = `<div class="text-4xl mb-2">💀</div><span class="text-red-500 text-3xl font-clash-title">Derrota!</span><br><span class="text-slate-300 text-lg">A carta era <span class="text-yellow-400 font-bold">${secretCard.name}</span></span>`;
+        singlePlayerGameContent.insertBefore(gameOverMsg, spHintsContainer);
     }
 }

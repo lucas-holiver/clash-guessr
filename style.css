@@ -7,126 +7,6 @@
     text-shadow: 1px 1px 0 #000;
 }
 
-/* Animação para a linha entrando */
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.guess-row {
-    animation: slideUp 0.4s ease-out forwards;
-}
-
-/* Fontes e Utilitários */
-@font-face {
-    font-family: 'Supercell-Magic';
-    src: url('https://cdn.jsdelivr.net/gh/mvmspace/supercell-magic-font@1.0.0/dist/Supercell-Magic_2.woff2') format('woff2');
-}
-
-body { font-family: 'Supercell-Magic', sans-serif; }
-
-.bg-radial {
-    background-image: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.7) 100%), 
-                      repeating-conic-gradient(from 45deg, #0c5867 0% 25%, #073645 25% 50%);
-    background-size: auto, 32px 32px;
-}
-
-.font-clash-title {
-    font-family: 'Supercell-Magic', sans-serif;
-    text-shadow: 2px 2px 0 #000;
-}
-
-.text-shadow { text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); }
-
-.game-container {
-    background-color: rgba(30, 41, 59, 0.75);
-    backdrop-filter: blur(8px);
-    border: 2px solid #5a677d;
-    border-radius: 1rem;
-    position: relative;
-}
-
-/* Cores de Status */
-.status-correct { box-shadow: 0 0 10px 2px rgba(57, 255, 20, 0.7); background-color: rgba(57, 255, 20, 0.2); border-color: rgba(57, 255, 20, 0.5); }
-.status-incorrect { box-shadow: 0 0 10px 2px rgba(255, 49, 49, 0.7); background-color: rgba(255, 49, 49, 0.2); border-color: rgba(255, 49, 49, 0.5); }
-.status-partial { box-shadow: 0 0 10px 2px rgba(255, 159, 67, 0.7); background-color: rgba(255, 159, 67, 0.2); border-color: rgba(255, 159, 67, 0.5); }
-
-/* Animação simples */
-@keyframes flipIn {
-    from { opacity: 0; transform: rotateX(-90deg); }
-    to { opacity: 1; transform: rotateX(0); }
-}
-.guess-row { animation: flipIn 0.5s ease-out forwards; }
-/* --- ANIMAÇÃO LENDÁRIA (CORRIGIDA E SEM PRETO) --- */
-@keyframes legendary-shimmer {
-    0% { background-position: 200% center; }
-    100% { background-position: -200% center; }
-}
-
-.text-legendary {
-    /* Gradiente suave Roxo -> Rosa -> Dourado */
-    background: linear-gradient(
-        90deg, 
-        #a855f7 0%, 
-        #ec4899 25%, 
-        #facc15 50%, 
-        #ec4899 75%, 
-        #a855f7 100%
-    );
-    background-size: 200% auto;
-    
-    /* Aplica o gradiente no texto */
-    color: #ec4899;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    
-    /* Animação */
-    animation: legendary-shimmer 4s linear infinite;
-    
-    /* FORÇA A REMOÇÃO DE SOMBRAS/CONTORNOS */
-    /* O !important é necessário para sobrescrever a classe .font-clash e o drop-shadow do HTML */
-    text-shadow: none !important;
-    filter: none !important;
-    
-    /* Adiciona um peso extra na fonte para compensar a falta de contorno */
-    font-weight: 900; 
-}
-
-/* --- Victory Modal Animation --- */
-@keyframes victory-modal-show {
-    from {
-        opacity: 0;
-        transform: translateY(-40px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-.victory-modal-enter {
-    animation: victory-modal-show 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-:root {
-    --color-interact: #00E6E6;
-}
-
-.font-clash {
-    font-family: 'Supercell-Magic', sans-serif;
-    text-shadow: 1px 1px 0 #000;
-}
-
-/* Animação para a linha entrando */
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.guess-row {
-    animation: slideUp 0.4s ease-out forwards;
-}
-
 /* Fontes e Utilitários */
 @font-face {
     font-family: 'Supercell-Magic';
@@ -328,15 +208,103 @@ input[type="range"]::-moz-range-thumb {
     background-color: #facc15; /* yellow-400 */
 }
 
-.player-label {
-    position: absolute;
-    top: -10px;
-    left: 10px;
-    background-color: #f59e0b;
-    color: #1e293b;
-    padding: 2px 8px;
-    border-radius: 99px;
-    font-size: 10px;
+/* Animação para a linha de palpite entrando */
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.sp-guess-row {
+    animation: slideUp 0.4s ease-out forwards;
+}
+
+
+/* --- NOVOS ESTILOS PARA MODO DOIS JOGADORES --- */
+
+#two-player-game-content {
+    background-color: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+    border: 2px solid #5a677d;
+    border-radius: 1rem;
+    padding: 1rem;
+}
+
+.battle-panel {
+    flex: 1;
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid rgba(71, 85, 105, 0.8);
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Previne overflow no flex item */
+}
+
+.player-panel-title {
+    text-align: center;
+    font-size: 1.5rem;
     font-weight: bold;
-    z-index: 10;
+    color: #f59e0b;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #475569;
+}
+
+.central-panel {
+    flex: 0 0 auto; /* Não cresce, não encolhe, baseia no conteúdo */
+    width: 200px; /* Largura fixa para o painel central */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+}
+
+.guesses-list-2p {
+    flex-grow: 1;
+    overflow-y: auto;
+    space-y: 0.5rem;
+    padding-right: 0.5rem; /* Espaço para a barra de rolagem */
+}
+
+/* Animação de revelação para 2P */
+@keyframes reveal {
+    from {
+        opacity: 0;
+        transform: scale(0.9) rotateX(-20deg);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) rotateX(0);
+    }
+}
+.tp-guess-row {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.tp-guess-row.reveal {
+    opacity: 1;
+    transform: scale(1);
+    animation: reveal 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+
+/* Responsividade para a arena de batalha */
+@media (max-width: 768px) {
+    #battle-arena {
+        flex-direction: column;
+    }
+    .central-panel {
+        width: 100%;
+        order: -1; /* Move o painel central para o topo */
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    #tp-hints-container {
+        flex-direction: row !important;
+        gap: 1rem !important;
+        margin-top: 0 !important;
+    }
 }

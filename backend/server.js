@@ -30,6 +30,7 @@ const rateLimitStrikes = new Map();
 const BASE_COOLDOWN_S = 5;
 const PENALTY_COOLDOWN_S = 15;
 const STRIKE_WINDOW_MS = 60 * 1000;
+const SINGLE_PLAYER_MAX_ATTEMPTS = 15;
 
 
 // --- ROTA DE CARTAS (COMPARTILHADA) ---
@@ -70,9 +71,13 @@ app.post('/game', (req, res) => {
 
     const id = uuidv4();
     const secret = CARDS[Math.floor(Math.random() * CARDS.length)];
-    singlePlayerSessions[id] = { secret, attempts: 0 };
+    singlePlayerSessions[id] = { 
+        secret, 
+        attempts: 0,
+        maxAttempts: SINGLE_PLAYER_MAX_ATTEMPTS
+    };
     console.log(`Jogo 1P ${id} iniciado. Segredo: ${secret.name}`);
-    res.json({ id });
+    res.json({ id, maxAttempts: SINGLE_PLAYER_MAX_ATTEMPTS });
 });
 
 app.post('/guess', (req, res) => {
@@ -82,7 +87,7 @@ app.post('/guess', (req, res) => {
     
     const feedback = processGuess(guessName, session.secret);
     session.attempts++;
-    feedback.isGameOver = feedback.isWin || session.attempts >= 15;
+    feedback.isGameOver = feedback.isWin || session.attempts >= session.maxAttempts;
 
     if (feedback.isGameOver && !feedback.isWin) {
         feedback.secretCard = session.secret;
@@ -93,7 +98,9 @@ app.post('/guess', (req, res) => {
     if (session.attempts >= 6) hints.push({ label: 'Raridade', value: session.secret.rarity });
     if (session.attempts >= 10) hints.push({ label: 'Elixir', value: session.secret.elixir });
 
-    res.json({ feedback, hints });
+    const attemptsPayload = { current: session.attempts, max: session.maxAttempts };
+
+    res.json({ feedback, hints, attempts: attemptsPayload });
     if (feedback.isGameOver) delete singlePlayerSessions[id];
 });
 
@@ -227,9 +234,22 @@ function processTurn(game) {
     const p1Feedback = processGuess(p1Guess, game.secretCard);
     const p2Feedback = processGuess(p2Guess, game.secretCard);
 
+    const hints = [];
+    if (game.settings.hints) {
+        if (game.currentTurn >= 3) hints.push({ label: 'Tipo', value: game.secretCard.type });
+        if (game.currentTurn >= 6) hints.push({ label: 'Raridade', value: game.secretCard.rarity });
+        if (game.currentTurn >= 10) hints.push({ label: 'Elixir', value: game.secretCard.elixir });
+    }
+
+    const turnResultPayload = { 
+        type: 'turnResult', 
+        turn: game.currentTurn, 
+        hints 
+    };
+
     // Enviar resultados
-    p1.ws.send(JSON.stringify({ type: 'turnResult', turn: game.currentTurn, myFeedback: p1Feedback, opponentFeedback: p2Feedback }));
-    p2.ws.send(JSON.stringify({ type: 'turnResult', turn: game.currentTurn, myFeedback: p2Feedback, opponentFeedback: p1Feedback }));
+    p1.ws.send(JSON.stringify({ ...turnResultPayload, myFeedback: p1Feedback, opponentFeedback: p2Feedback }));
+    p2.ws.send(JSON.stringify({ ...turnResultPayload, myFeedback: p2Feedback, opponentFeedback: p1Feedback }));
 
     // Checar fim de jogo
     const p1Win = p1Feedback.isWin;

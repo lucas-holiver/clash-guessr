@@ -113,13 +113,19 @@
             </div>
         </section>
 
-        <div id="game-content" class="w-full max-w-4xl game-container p-4 sm:p-6 hidden relative">
+        <!-- CONTEÚDO DO JOGO UM JOGADOR -->
+        <div id="single-player-game-content" class="w-full max-w-4xl game-container p-4 sm:p-6 hidden relative">
             
             <button id="back-to-menu-ingame-btn" title="Voltar ao Menu Principal" class="absolute top-3 right-3 sm:top-4 sm:right-4 text-slate-400 hover:text-yellow-400 transition-colors z-30">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
                 </svg>
             </button>
+
+             <!-- Contador de Tentativas 1P -->
+            <div id="sp-attempts-counter" class="flex items-center justify-center gap-2 mb-4">
+                <!-- Injetado via JS -->
+            </div>
 
             <!-- Área de Busca -->
             <section id="search-section" class="w-full max-w-2xl mx-auto relative mb-6">
@@ -146,7 +152,7 @@
             </div>
 
             <!-- Dicas (Baús) -->
-            <section id="hints-container" class="flex justify-center gap-4 mb-6 flex-wrap">
+            <section id="sp-hints-container" class="flex justify-center gap-4 mb-6 flex-wrap">
                 <!-- Injetado via JS -->
             </section>
 
@@ -161,12 +167,51 @@
                         <span>Arena</span>
                         <span>Evolução</span>
                     </div>
-                    <div id="guesses-list" class="space-y-2">
+                    <div id="sp-guesses-list" class="space-y-2">
                         <!-- Palpites entram aqui via JS -->
                     </div>
                 </div>
             </section>
         </div>
+
+        <!-- CONTEÚDO DO JOGO DOIS JOGADORES -->
+        <div id="two-player-game-content" class="w-full max-w-7xl hidden relative">
+             <button id="tp-back-to-menu-btn" title="Sair da Partida" class="absolute top-2 right-2 sm:top-4 sm:right-4 text-slate-400 hover:text-red-500 transition-colors z-30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                   <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+            </button>
+            <div id="battle-arena" class="flex flex-col md:flex-row gap-4">
+                
+                <!-- Painel do Jogador -->
+                <div id="my-player-panel" class="battle-panel">
+                    <h2 class="player-panel-title">Você</h2>
+                    <div id="my-guesses-list" class="guesses-list-2p">
+                        <!-- Palpites do jogador aqui -->
+                    </div>
+                </div>
+
+                <!-- Painel Central de Informações -->
+                <div id="central-info-panel" class="central-panel">
+                    <div id="turn-info" class="text-center">
+                        <p class="text-slate-400 text-sm">Turno</p>
+                        <p id="turn-counter" class="text-4xl font-bold text-yellow-400">1</p>
+                    </div>
+                    <div id="tp-hints-container" class="flex flex-col items-center gap-4 mt-4">
+                        <!-- Dicas do 2P aqui -->
+                    </div>
+                </div>
+
+                <!-- Painel do Oponente -->
+                <div id="opponent-player-panel" class="battle-panel">
+                     <h2 class="player-panel-title">Oponente</h2>
+                     <div id="opponent-guesses-list" class="guesses-list-2p">
+                        <!-- Palpites do oponente aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Victory Modal -->
