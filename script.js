@@ -206,8 +206,9 @@ function backToMenu() {
     twoPlayerLobby.classList.add('hidden');
     victoryModal.classList.add('hidden');
     victoryContent.classList.remove('victory-modal-enter');
-    // Anexa a busca de volta ao corpo para não se perder
+    // Anexa a busca de volta ao corpo para não se perder e a esconde
     document.body.appendChild(searchSection); 
+    searchSection.classList.add('hidden');
     resetLobbyUI();
 }
 
@@ -223,6 +224,7 @@ function backToLobby() {
     victoryModal.classList.add('hidden');
     victoryContent.classList.remove('victory-modal-enter');
     document.body.appendChild(searchSection);
+    searchSection.classList.add('hidden');
     resetLobbyUI();
     fetchPublicGames();
 }
