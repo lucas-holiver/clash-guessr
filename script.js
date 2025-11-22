@@ -769,7 +769,6 @@ function renderGuessRow(targetElement, { feedback }, isTP = false, turn = null) 
 
     const rarityClass = getRarityColor(card.rarity);
 
-    // --- Building blocks for cells ---
     const cardCell = `
         <div class="flex flex-col items-center justify-center h-24 sm:h-36 p-1 sm:p-2">
             <img src="${localCardImage}" alt="${card.name}" class="w-10 h-14 sm:w-16 sm:h-20 object-contain drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"/>
@@ -831,16 +830,8 @@ function renderGuessRow(targetElement, { feedback }, isTP = false, turn = null) 
             }
         </div>`;
 
-    let gridClass = '';
-    let innerHTML = '';
-
-    if (isTP) {
-        gridClass = 'grid-cols-[1.5fr_1fr_1fr_1fr]';
-        innerHTML = cardCell + elixirCell + rarityCell + typeCell;
-    } else {
-        gridClass = 'grid-cols-[1.5fr_repeat(5,1fr)]';
-        innerHTML = cardCell + elixirCell + rarityCell + typeCell + arenaCell + evolutionCell;
-    }
+    const gridClass = 'grid-cols-[100px_repeat(5,80px)] sm:grid-cols-[140px_repeat(5,110px)]';
+    const innerHTML = cardCell + elixirCell + rarityCell + typeCell + arenaCell + evolutionCell;
     
     row.className = `${animationClass} bg-slate-900/75 rounded-lg p-1 sm:p-2 grid ${gridClass} gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50`;
     row.innerHTML = innerHTML;
