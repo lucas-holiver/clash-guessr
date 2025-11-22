@@ -182,7 +182,31 @@ function handleGuess(ws, guessName) {
 
     game.turnGuesses[ws.playerId] = guessName;
 
-    if (Object.keys(game.turnGuesses).length === 2) {
+    // Se for o primeiro palpite do turno, envia uma atualização parcial
+    if (Object.keys(game.turnGuesses).length === 1) {
+        const feedback = processGuess(guessName, game.secretCard);
+        
+        // Envia o resultado parcial para quem palpitou
+        ws.send(JSON.stringify({
+            type: 'turnUpdate',
+            turn: game.currentTurn,
+            myFeedback: feedback,
+            opponentFeedback: null
+        }));
+        
+        // Notifica o oponente que o outro jogador já jogou
+        const opponent = game.players.find(p => p.id !== ws.playerId);
+        if (opponent) {
+            opponent.ws.send(JSON.stringify({
+                type: 'turnUpdate',
+                turn: game.currentTurn,
+                myFeedback: null,
+                opponentFeedback: { waiting: true } 
+            }));
+        }
+    } 
+    // Se ambos palpitaram, processa o turno completo
+    else if (Object.keys(game.turnGuesses).length === 2) {
         processTurn(game);
     }
 }
@@ -241,20 +265,19 @@ function processTurn(game) {
         if (game.currentTurn >= 10) hints.push({ label: 'Elixir', value: game.secretCard.elixir });
     }
 
-    const turnResultPayload = { 
-        type: 'turnResult', 
+    const turnUpdatePayload = { 
+        type: 'turnUpdate', 
         turn: game.currentTurn, 
         hints 
     };
 
-    // Enviar resultados
-    p1.ws.send(JSON.stringify({ ...turnResultPayload, myFeedback: p1Feedback, opponentFeedback: p2Feedback }));
-    p2.ws.send(JSON.stringify({ ...turnResultPayload, myFeedback: p2Feedback, opponentFeedback: p1Feedback }));
+    // Enviar resultados completos para ambos
+    p1.ws.send(JSON.stringify({ ...turnUpdatePayload, myFeedback: p1Feedback, opponentFeedback: p2Feedback }));
+    p2.ws.send(JSON.stringify({ ...turnUpdatePayload, myFeedback: p2Feedback, opponentFeedback: p1Feedback }));
 
     // Checar fim de jogo
     const p1Win = p1Feedback.isWin;
     const p2Win = p2Feedback.isWin;
-
     let gameOver = false;
     let result = {};
 
@@ -283,6 +306,8 @@ function processTurn(game) {
     } else {
         game.currentTurn++;
         game.turnGuesses = {};
+        const newTurnPayload = { type: 'newTurn', turn: game.currentTurn };
+        game.players.forEach(p => p.ws.send(JSON.stringify(newTurnPayload)));
     }
 }
 

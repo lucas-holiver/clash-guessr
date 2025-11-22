@@ -263,7 +263,7 @@ async function makeGuess(cardName) {
         if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'guess', guessName: cardName }));
             searchInput.disabled = true;
-            showGameNotification("Aguardando o palpite do oponente...");
+            showGameNotification("Seu palpite foi enviado! Aguardando o oponente...");
         }
     } else {
         try {
@@ -484,25 +484,31 @@ function joinTwoPlayerGame(gameId, isHost = false) {
                 currentGameId = data.gameId;
                 prepareTwoPlayerBoard(data.settings);
                 break;
-            case 'turnResult':
+            case 'turnUpdate':
+                myGuessesList.querySelector(`[data-turn="${data.turn}"]`)?.remove();
+                opponentGuessesList.querySelector(`[data-turn="${data.turn}"]`)?.remove();
+                
+                const myRow = renderGuessRow(myGuessesList, { feedback: data.myFeedback }, true, data.turn);
+                const opponentRow = renderGuessRow(opponentGuessesList, { feedback: data.opponentFeedback }, true, data.turn);
+                
+                if (myRow) {
+                    void myRow.offsetWidth;
+                    myRow.classList.add('reveal');
+                }
+                if (opponentRow) {
+                    void opponentRow.offsetWidth;
+                    opponentRow.classList.add('reveal');
+                }
+        
+                if (data.hints) {
+                     updateHints(data.hints, true);
+                }
+                break;
+            case 'newTurn':
                 hideGameNotification();
                 searchInput.disabled = false;
                 searchInput.focus();
-                
-                turnCounter.textContent = data.turn + 1;
-                
-                // Renderização sincronizada
-                const myRow = renderGuessRow(myGuessesList, { feedback: data.myFeedback }, true);
-                const opponentRow = renderGuessRow(opponentGuessesList, { feedback: data.opponentFeedback }, true);
-                
-                // Força o reflow para a animação funcionar
-                void myRow.offsetWidth;
-                void opponentRow.offsetWidth;
-
-                myRow.classList.add('reveal');
-                opponentRow.classList.add('reveal');
-                
-                updateHints(data.hints, true);
+                turnCounter.textContent = data.turn;
                 break;
             case 'gameOver':
                 endTwoPlayerGame(data.result, data.secretCard);
@@ -641,7 +647,24 @@ function getRarityColor(r) {
     return 'text-white';
 }
 
-function renderGuessRow(targetElement, { feedback }, isTP = false) {
+function renderPlaceholderRow(targetElement, message, turn) {
+    const row = document.createElement('div');
+    row.className = 'tp-guess-row bg-slate-900/75 rounded-lg p-1 sm:p-2 grid grid-cols-1 gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border-2 border-dashed border-slate-700 h-24 sm:h-36 flex items-center justify-center';
+    row.innerHTML = `<p class="text-slate-400 italic px-4">${message}</p>`;
+    row.dataset.turn = turn;
+    targetElement.prepend(row);
+    return row;
+}
+
+
+function renderGuessRow(targetElement, { feedback }, isTP = false, turn = null) {
+    if (!feedback) return null;
+
+    if (isTP && feedback.waiting) {
+        const message = "Você não pode ver a carta do oponente até fazer sua jogada.";
+        return renderPlaceholderRow(targetElement, message, turn);
+    }
+
     const card = feedback.card;
     const comp = feedback.comparisons;
     const slug = getCardImageSlug(card.name);
@@ -651,6 +674,10 @@ function renderGuessRow(targetElement, { feedback }, isTP = false) {
     const arenaName = `Arena ${card.arena}`;
 
     const row = document.createElement('div');
+    if (isTP && turn !== null) {
+        row.dataset.turn = turn;
+    }
+
     const animationClass = isTP ? 'tp-guess-row' : 'sp-guess-row';
     
     const getArrowIcon = (direction) => {
