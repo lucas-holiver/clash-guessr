@@ -914,6 +914,19 @@ function endGame(win, card) {
         const attemptsCount = guessedCards.size;
         const attemptText = attemptsCount === 1 ? 'tentativa' : 'tentativas';
 
+        const victoryTitleEl = document.querySelector('#victory-modal h2');
+        const victoryContentEl = document.getElementById('victory-content');
+
+        if(victoryTitleEl) {
+            victoryTitleEl.textContent = 'VITÓRIA!';
+            victoryTitleEl.classList.remove('text-red-500');
+            victoryTitleEl.classList.add('text-yellow-400');
+        }
+        if(victoryContentEl) {
+            victoryContentEl.classList.remove('border-slate-600');
+            victoryContentEl.classList.add('border-yellow-500');
+        }
+
         victoryCardImage.src = localCardImage;
         victoryCardName.textContent = card.name;
         victoryCardName.className = `mt-4 text-xl sm:text-2xl font-clash font-bold ${getRarityColor(card.rarity)}`;
@@ -932,31 +945,73 @@ function endTwoPlayerGame(result, secretCard) {
     hideGameNotification();
     stopTurnTimer();
 
+    const victoryTitleEl = document.querySelector('#victory-modal h2');
+    const victoryContentEl = document.getElementById('victory-content');
+
+    let title = '';
+    let message = '';
+    let cardToShow = null;
+    let isWin = false;
+
     if (result.winner) {
-        const winnerCard = result.winner === 'me' ? result.myCard : result.opponentCard;
-        const slug = getCardImageSlug(winnerCard.name);
-        const localCardImage = `./img/cards/${slug}.png`;
-
-        victoryCardImage.src = localCardImage;
-        victoryCardName.textContent = winnerCard.name;
-        victoryCardName.className = `mt-4 text-xl sm:text-2xl font-clash font-bold ${getRarityColor(winnerCard.rarity)}`;
-
         if (result.winner === 'me') {
-            victoryAttempts.innerHTML = `Você venceu na <span class="font-bold text-white">${result.turn}ª</span> rodada!`;
-        } else {
-            victoryAttempts.innerHTML = `Você perdeu! O oponente acertou em <span class="font-bold text-white">${result.turn}</span> rodadas.`;
+            isWin = true;
+            title = 'VITÓRIA!';
+            message = `Você venceu na <span class="font-bold text-white">${result.turn}ª</span> rodada!`;
+            cardToShow = result.myCard;
+        } else { // 'opponent' won
+            isWin = false;
+            title = 'DERROTA!';
+            message = `Você perdeu! O oponente acertou em <span class="font-bold text-white">${result.turn}</span> rodadas.`;
+            cardToShow = result.opponentCard; // Show what opponent guessed
         }
-        
-        victoryModal.classList.remove('hidden');
-        victoryContent.classList.add('victory-modal-enter');
-
     } else if (result.draw) {
-         gameOverMsg.classList.remove('hidden');
-         endTitle.innerHTML = `<div class="text-4xl mb-2">🤝</div><span class="text-yellow-400 text-3xl font-clash-title">Empate!</span><br><span class="text-slate-300 text-lg">Ambos acertaram! A carta era <span class="font-bold">${secretCard.name}</span></span>`;
-         singlePlayerGameContent.insertBefore(gameOverMsg, spHintsContainer);
-    } else { // Derrota por limite de tentativas
-        gameOverMsg.classList.remove('hidden');
-        endTitle.innerHTML = `<div class="text-4xl mb-2">💀</div><span class="text-red-500 text-3xl font-clash-title">Derrota!</span><br><span class="text-slate-300 text-lg">A carta era <span class="text-yellow-400 font-bold">${secretCard.name}</span></span>`;
-        singlePlayerGameContent.insertBefore(gameOverMsg, spHintsContainer);
+        isWin = true; // Visually more like a win/neutral outcome than a loss
+        title = 'EMPATE!';
+        message = `Ambos acertaram! A carta era <span class="font-bold text-white">${secretCard.name}</span>`;
+        cardToShow = secretCard;
+    } else { // Loss by attempts limit
+        isWin = false;
+        title = 'DERROTA!';
+        message = `Limite de tentativas atingido! A carta era <span class="font-bold text-white">${secretCard.name}</span>.`;
+        cardToShow = secretCard;
     }
+
+    if (!cardToShow) { // Fallback, should not happen
+        console.error("Could not determine which card to show at the end of the game.", result);
+        cardToShow = secretCard;
+    }
+
+    // Set modal content
+    const slug = getCardImageSlug(cardToShow.name);
+    const localCardImage = `./img/cards/${slug}.png`;
+    victoryCardImage.src = localCardImage;
+    victoryCardName.textContent = cardToShow.name;
+    victoryCardName.className = `mt-4 text-xl sm:text-2xl font-clash font-bold ${getRarityColor(cardToShow.rarity)}`;
+    
+    victoryAttempts.innerHTML = message;
+
+    if (victoryTitleEl) {
+        victoryTitleEl.textContent = title;
+        if (isWin) {
+            victoryTitleEl.classList.remove('text-red-500');
+            victoryTitleEl.classList.add('text-yellow-400');
+        } else {
+            victoryTitleEl.classList.remove('text-yellow-400');
+            victoryTitleEl.classList.add('text-red-500');
+        }
+    }
+    if (victoryContentEl) {
+        if (isWin) {
+            victoryContentEl.classList.remove('border-slate-600');
+            victoryContentEl.classList.add('border-yellow-500');
+        } else {
+            victoryContentEl.classList.remove('border-yellow-500');
+            victoryContentEl.classList.add('border-slate-600');
+        }
+    }
+    
+    // Show modal
+    victoryModal.classList.remove('hidden');
+    victoryContent.classList.add('victory-modal-enter');
 }
