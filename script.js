@@ -33,7 +33,6 @@ const twoPlayerBtn = document.getElementById('two-player-btn');
 const singlePlayerGameContent = document.getElementById('single-player-game-content');
 const spGuessesList = document.getElementById('sp-guesses-list');
 const spHintsContainer = document.getElementById('sp-hints-container');
-const spAttemptsCounter = document.getElementById('sp-attempts-counter');
 
 // Elementos Two Player
 const twoPlayerGameContent = document.getElementById('two-player-game-content');
@@ -726,8 +725,15 @@ function renderPlaceholderRow(targetElement, message, turn) {
 function renderGuessRow(targetElement, { feedback }, isTP = false, turn = null) {
     if (!feedback) return null;
 
+    // Para o jogador que já jogou, mostra no painel do oponente que está aguardando.
     if (isTP && feedback.waiting) {
-        const message = "Você não pode ver a carta do oponente até fazer sua jogada.";
+        const message = "Aguardando oponente...";
+        return renderPlaceholderRow(targetElement, message, turn);
+    }
+    
+    // Para o jogador que ainda não jogou, mostra no painel do oponente que ele já jogou.
+    if (isTP && feedback.hasGuessed) {
+        const message = "O oponente já jogou. Faça sua jogada para revelar a carta.";
         return renderPlaceholderRow(targetElement, message, turn);
     }
 
@@ -770,7 +776,7 @@ function renderGuessRow(targetElement, { feedback }, isTP = false, turn = null) 
     const rarityClass = getRarityColor(card.rarity);
 
     const cardCell = `
-        <div class="flex flex-col items-center justify-center h-24 sm:h-36 p-1 sm:p-2">
+        <div class="flex flex-col items-center justify-center h-24 sm:h-36 p-1 sm:p-2 rounded-md border-2 border-slate-700/50 bg-slate-800/60">
             <img src="${localCardImage}" alt="${card.name}" class="w-10 h-14 sm:w-16 sm:h-20 object-contain drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"/>
             <span class="mt-1 text-[10px] sm:text-base font-clash font-bold text-white drop-shadow-md leading-tight ${rarityClass}">
                 ${card.name}
@@ -846,21 +852,21 @@ function renderHints(container) {
 
     hints.forEach(h => {
         const div = document.createElement('div');
-        div.className = `flex flex-col items-center mx-2 hint-chest hint-${h.state}`;
+        div.className = `flex flex-col items-center hint-chest hint-${h.state}`;
 
         const sparkleHTML = `<div class="sparkle-container"><div class="sparkle"></div><div class="sparkle"></div><div class="sparkle"></div></div>`;
 
         div.innerHTML = `
-            <div class="relative w-20 h-16 sm:w-24 sm:h-20 flex items-center justify-center hint-chest-wrapper">
+            <div class="relative w-16 h-12 sm:w-20 sm:h-16 lg:w-24 lg:h-20 flex items-center justify-center hint-chest-wrapper">
                 ${sparkleHTML}
-                <img src="${chestImg}" class="chest-image w-16 sm:w-20 h-auto object-contain" alt="Baú de Dica">
+                <img src="${chestImg}" class="chest-image w-14 sm:w-16 lg:w-20 h-auto object-contain" alt="Baú de Dica">
                 ${h.state === 'revealed' ? 
-                    `<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/80 border border-yellow-500/50 text-yellow-300 text-xs px-2 py-1 rounded-full whitespace-nowrap z-10">
+                    `<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-black/80 border border-yellow-500/50 text-yellow-300 text-[10px] sm:text-xs px-2 py-1 rounded-full whitespace-nowrap z-10">
                         ${h.label}: <span class="text-white font-bold">${h.value}</span>
                      </div>` 
                 : ''}
             </div>
-            <span class="text-slate-400 text-xs mt-2 font-semibold">Após ${h.steps}</span>
+            <span class="text-slate-400 text-[10px] sm:text-xs mt-1 sm:mt-2 font-semibold">Após ${h.steps}</span>
         `;
 
         if (h.state === 'ready') {
@@ -874,18 +880,29 @@ function renderHints(container) {
     });
 }
 
-function renderAttempts(current, max) {
-    spAttemptsCounter.innerHTML = '';
-    const crownEmpty = 'https://cdn.royaleapi.com/static/img/ui/crown-empty.png';
-    const crownFilled = 'https://cdn.royaleapi.com/static/img/ui/crown-blue.png';
+function renderAttempts(current, max) { // current é o número de tentativas feitas (base 0)
+    const currentAttemptEl = document.getElementById('sp-current-attempt');
+    const maxAttemptsEl = document.getElementById('sp-max-attempts');
+    const displayEl = document.getElementById('sp-turn-counter-display');
+    if (!currentAttemptEl || !maxAttemptsEl || !displayEl) return;
+
+    const attemptNumber = current + 1;
     
-    for (let i = 0; i < max; i++) {
-        const img = document.createElement('img');
-        img.src = i < (max - current) ? crownFilled : crownEmpty;
-        img.className = 'w-6 h-6 sm:w-8 sm:h-8';
-        img.title = `${max - i} tentativas restantes`;
-        spAttemptsCounter.appendChild(img);
+    currentAttemptEl.textContent = attemptNumber > max ? max : attemptNumber;
+    maxAttemptsEl.textContent = max;
+
+    const progress = attemptNumber / max;
+    let colorClass = 'text-green-400';
+    if (attemptNumber >= max) {
+        colorClass = 'text-red-500';
+    } else if (progress > 0.75) {
+        colorClass = 'text-orange-400';
+    } else if (progress > 0.5) {
+        colorClass = 'text-yellow-400';
     }
+    
+    displayEl.classList.remove('text-green-400', 'text-yellow-400', 'text-orange-400', 'text-red-500');
+    displayEl.classList.add(colorClass);
 }
 
 // --- FIM DE JOGO ---

@@ -297,13 +297,14 @@ input[type="range"]::-moz-range-thumb {
         width: 100%;
         order: -1; /* Move o painel central para o topo */
         flex-direction: row;
-        justify-content: space-around;
+        justify-content: space-between;
         align-items: center;
         margin-bottom: 1rem;
+        padding: 0.25rem 0.5rem;
     }
     #tp-hints-container {
         flex-direction: row !important;
-        gap: 1rem !important;
+        gap: 0.25rem !important;
         margin-top: 0 !important;
     }
 }

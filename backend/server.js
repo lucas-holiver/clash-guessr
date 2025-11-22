@@ -188,6 +188,7 @@ function handleGuess(ws, guessName) {
     if (guessCount === 1) {
         const feedback = processGuess(guessName, game.secretCard);
         
+        // Notifica o jogador que acabou de chutar
         ws.send(JSON.stringify({
             type: 'turnUpdate',
             turn: game.currentTurn,
@@ -195,13 +196,14 @@ function handleGuess(ws, guessName) {
             opponentFeedback: { waiting: true } 
         }));
         
+        // Notifica o oponente que está aguardando
         const opponent = game.players.find(p => p.id !== ws.playerId);
         if (opponent) {
             opponent.ws.send(JSON.stringify({
                 type: 'turnUpdate',
                 turn: game.currentTurn,
-                myFeedback: { waiting: true },
-                opponentFeedback: feedback
+                myFeedback: null, // Não renderiza nada no seu próprio painel
+                opponentFeedback: { hasGuessed: true } // Mostra que o oponente já jogou
             }));
         }
 
