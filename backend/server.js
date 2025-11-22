@@ -118,6 +118,7 @@ app.post('/game/create-two-player', (req, res) => {
         state: 'waiting',
         currentTurn: 1,
         turnGuesses: {},
+        turnTimer: null,
     };
     console.log(`Jogo 2P ${gameId} criado. Segredo: ${twoPlayerGames[gameId].secretCard.name}`);
     res.status(201).json({ gameId });
@@ -178,35 +179,54 @@ function handleJoin(ws, gameId) {
 
 function handleGuess(ws, guessName) {
     const game = twoPlayerGames[ws.gameId];
-    if (!game || game.state !== 'playing') return;
+    if (!game || game.state !== 'playing' || game.turnGuesses[ws.playerId]) return;
 
     game.turnGuesses[ws.playerId] = guessName;
 
-    // Se for o primeiro palpite do turno, envia uma atualização parcial
-    if (Object.keys(game.turnGuesses).length === 1) {
+    const guessCount = Object.keys(game.turnGuesses).length;
+
+    if (guessCount === 1) {
         const feedback = processGuess(guessName, game.secretCard);
         
-        // Envia o resultado parcial para quem palpitou
         ws.send(JSON.stringify({
             type: 'turnUpdate',
             turn: game.currentTurn,
             myFeedback: feedback,
-            opponentFeedback: null
+            opponentFeedback: { waiting: true } 
         }));
         
-        // Notifica o oponente que o outro jogador já jogou
         const opponent = game.players.find(p => p.id !== ws.playerId);
         if (opponent) {
             opponent.ws.send(JSON.stringify({
                 type: 'turnUpdate',
                 turn: game.currentTurn,
-                myFeedback: null,
-                opponentFeedback: { waiting: true } 
+                myFeedback: { waiting: true },
+                opponentFeedback: feedback
             }));
         }
-    } 
-    // Se ambos palpitaram, processa o turno completo
-    else if (Object.keys(game.turnGuesses).length === 2) {
+
+        // Inicia o cronômetro para o outro jogador
+        game.turnTimer = setTimeout(() => {
+            const idlePlayer = game.players.find(p => !game.turnGuesses[p.id]);
+            if (idlePlayer) {
+                console.log(`Jogador ${idlePlayer.id} no jogo ${game.id} esgotou o tempo. Auto-chute.`);
+                const randomCard = CARDS[Math.floor(Math.random() * CARDS.length)];
+                game.turnGuesses[idlePlayer.id] = randomCard.name;
+
+                idlePlayer.ws.send(JSON.stringify({ type: 'autoGuessed', cardName: randomCard.name }));
+
+                processTurn(game);
+            }
+        }, 30000); // 30 segundos
+
+        const timerStartPayload = { type: 'timerStarted', duration: 30 };
+        game.players.forEach(p => p.ws.send(JSON.stringify(timerStartPayload)));
+
+    } else if (guessCount === 2) {
+        if (game.turnTimer) {
+            clearTimeout(game.turnTimer);
+            game.turnTimer = null;
+        }
         processTurn(game);
     }
 }
@@ -214,6 +234,11 @@ function handleGuess(ws, guessName) {
 function handleDisconnect(ws) {
     const game = twoPlayerGames[ws.gameId];
     if (!game) return;
+
+    if (game.turnTimer) {
+        clearTimeout(game.turnTimer);
+        game.turnTimer = null;
+    }
     
     const remainingPlayer = game.players.find(p => p.id !== ws.playerId);
     if (remainingPlayer && game.state === 'playing') {
@@ -228,7 +253,7 @@ function handleDisconnect(ws) {
 // --- LÓGICA DE JOGO COMPARTILHADA ---
 function processGuess(guessName, secretCard) {
     const guessCard = CARDS.find(c => c.name === guessName);
-    if (!guessCard) return null;
+    if (!guessCard) return { card: { name: 'Inválido' }, comparisons: {}, isWin: false };
 
     const compare = (val1, val2, isRarity = false) => {
         if (val1 === val2) return 'correct';
@@ -251,6 +276,8 @@ function processGuess(guessName, secretCard) {
 }
 
 function processTurn(game) {
+    if (Object.keys(game.turnGuesses).length !== 2) return;
+
     const [p1, p2] = game.players;
     const p1Guess = game.turnGuesses[p1.id];
     const p2Guess = game.turnGuesses[p2.id];
@@ -271,11 +298,9 @@ function processTurn(game) {
         hints 
     };
 
-    // Enviar resultados completos para ambos
     p1.ws.send(JSON.stringify({ ...turnUpdatePayload, myFeedback: p1Feedback, opponentFeedback: p2Feedback }));
     p2.ws.send(JSON.stringify({ ...turnUpdatePayload, myFeedback: p2Feedback, opponentFeedback: p1Feedback }));
 
-    // Checar fim de jogo
     const p1Win = p1Feedback.isWin;
     const p2Win = p2Feedback.isWin;
     let gameOver = false;
@@ -307,7 +332,9 @@ function processTurn(game) {
         game.currentTurn++;
         game.turnGuesses = {};
         const newTurnPayload = { type: 'newTurn', turn: game.currentTurn };
-        game.players.forEach(p => p.ws.send(JSON.stringify(newTurnPayload)));
+        setTimeout(() => {
+            game.players.forEach(p => p.ws.send(JSON.stringify(newTurnPayload)));
+        }, 1500); // Pequeno delay antes do próximo turno
     }
 }
 

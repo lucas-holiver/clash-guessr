@@ -13,6 +13,8 @@ let guessedCards = new Set();
 let hints = [];
 let isTwoPlayerMode = false;
 let ws = null;
+let tpMaxAttempts = 0;
+let turnTimerInterval = null;
 
 
 // Elementos DOM Globais
@@ -503,15 +505,26 @@ function joinTwoPlayerGame(gameId, isHost = false) {
                 if (data.hints) {
                      updateHints(data.hints, true);
                 }
+
+                if (data.myFeedback && data.opponentFeedback) {
+                    stopTurnTimer();
+                }
                 break;
             case 'newTurn':
                 hideGameNotification();
                 searchInput.disabled = false;
                 searchInput.focus();
-                turnCounter.textContent = data.turn;
+                updateTurnCounter(data.turn, tpMaxAttempts);
+                stopTurnTimer();
                 break;
             case 'gameOver':
                 endTwoPlayerGame(data.result, data.secretCard);
+                break;
+            case 'timerStarted':
+                startTurnTimer(data.duration);
+                break;
+            case 'autoGuessed':
+                showToast(`Tempo esgotado! Chutamos "${data.cardName}" para você.`);
                 break;
             case 'opponentDisconnected':
                 showToast('Oponente desconectou. Retornando ao lobby...');
@@ -533,6 +546,7 @@ function joinTwoPlayerGame(gameId, isHost = false) {
     };
 
     ws.onclose = () => {
+        stopTurnTimer();
         if (!singlePlayerGameContent.classList.contains('hidden') || !twoPlayerGameContent.classList.contains('hidden')) {
              if (victoryModal.classList.contains('hidden') && gameOverMsg.classList.contains('hidden')) {
                 showGameNotification('Conexão perdida com o servidor.', true);
@@ -583,7 +597,10 @@ function prepareTwoPlayerBoard(settings) {
     gameOverMsg.classList.add('hidden');
     hideGameNotification();
     
-    turnCounter.textContent = '1';
+    tpMaxAttempts = settings.maxAttempts;
+    document.getElementById('max-attempts-display').textContent = tpMaxAttempts;
+    updateTurnCounter(1, tpMaxAttempts);
+
     tpHintsContainer.style.display = settings.hints ? 'flex' : 'none';
     if(settings.hints) initializeHints(true);
 
@@ -635,6 +652,55 @@ function leaveTwoPlayerGame() {
         ws = null;
     }
     backToLobby();
+}
+
+function startTurnTimer(duration) {
+    const timerContainer = document.getElementById('turn-timer');
+    const countdownEl = document.getElementById('timer-countdown');
+    if (!timerContainer || !countdownEl) return;
+    
+    let timeLeft = duration;
+    countdownEl.textContent = timeLeft;
+    timerContainer.classList.remove('hidden');
+
+    clearInterval(turnTimerInterval); // Clear any existing timer
+    turnTimerInterval = setInterval(() => {
+        timeLeft--;
+        countdownEl.textContent = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(turnTimerInterval);
+            timerContainer.classList.add('hidden');
+        }
+    }, 1000);
+}
+
+function stopTurnTimer() {
+    clearInterval(turnTimerInterval);
+    const timerContainer = document.getElementById('turn-timer');
+    if (timerContainer) {
+        timerContainer.classList.add('hidden');
+    }
+}
+
+function updateTurnCounter(current, max) {
+    const turnCounterEl = document.getElementById('turn-counter');
+    const displayEl = document.getElementById('turn-counter-display');
+    if (!turnCounterEl || !displayEl) return;
+    
+    turnCounterEl.textContent = current;
+
+    const progress = current / max;
+    let colorClass = 'text-green-400'; // Default: até 50%
+    if (current === max) {
+        colorClass = 'text-red-500'; // Última rodada
+    } else if (progress > 0.75) {
+        colorClass = 'text-orange-400'; // > 75% até penúltima
+    } else if (progress > 0.5) {
+        colorClass = 'text-yellow-400'; // > 50% até 75%
+    }
+    
+    displayEl.classList.remove('text-green-400', 'text-yellow-400', 'text-orange-400', 'text-red-500');
+    displayEl.classList.add(colorClass);
 }
 
 // --- RENDERIZAÇÃO ---
@@ -857,6 +923,7 @@ function endGame(win, card) {
 function endTwoPlayerGame(result, secretCard) {
     searchSection.classList.add('hidden');
     hideGameNotification();
+    stopTurnTimer();
 
     if (result.winner) {
         const winnerCard = result.winner === 'me' ? result.myCard : result.opponentCard;

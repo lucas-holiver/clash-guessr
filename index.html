@@ -92,9 +92,9 @@
                 <div id="join-game-view" class="hidden">
                      <div class="mb-6">
                         <label for="join-code-input" class="text-lg mb-2 block">Entrar com Código</label>
-                        <div class="flex gap-2">
-                             <input type="text" id="join-code-input" placeholder="Cole o código aqui..." class="flex-grow p-3 bg-slate-800 border-2 border-slate-600 rounded-lg text-lg text-white focus:outline-none focus:border-yellow-500 transition-colors">
-                             <button id="join-by-code-btn" class="px-6 py-3 bg-yellow-500 text-slate-900 font-bold rounded-lg hover:bg-yellow-400">Entrar</button>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                             <input type="text" id="join-code-input" placeholder="Cole o código aqui..." class="w-full sm:flex-grow p-3 bg-slate-800 border-2 border-slate-600 rounded-lg text-lg text-white focus:outline-none focus:border-yellow-500 transition-colors">
+                             <button id="join-by-code-btn" class="w-full sm:w-auto px-6 py-3 bg-yellow-500 text-slate-900 font-bold rounded-lg hover:bg-yellow-400">Entrar</button>
                         </div>
                     </div>
                     <div>
@@ -202,7 +202,13 @@
                 <div id="central-info-panel" class="central-panel">
                     <div id="turn-info" class="text-center">
                         <p class="text-slate-400 text-sm">Turno</p>
-                        <p id="turn-counter" class="text-4xl font-bold text-yellow-400">1</p>
+                        <p id="turn-counter-display" class="text-4xl font-bold text-green-400 transition-colors duration-500">
+                            <span id="turn-counter">1</span> / <span id="max-attempts-display">20</span>
+                        </p>
+                    </div>
+                     <div id="turn-timer" class="hidden text-center mt-4">
+                        <p class="text-sm text-slate-400">Tempo Restante</p>
+                        <p id="timer-countdown" class="text-3xl font-bold text-red-500 animate-pulse">30</p>
                     </div>
                     <div id="tp-hints-container" class="flex flex-col items-center gap-4 mt-4">
                         <!-- Dicas do 2P aqui -->
