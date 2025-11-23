@@ -967,7 +967,7 @@ function renderGuessRow(targetElement, { feedback }, isTP = false, turn = null) 
     const getArrowIcon = (direction) => {
         if (!direction) return '';
         const d = direction === 'higher' ? 'M12 4l8 8h-6v8h-4v-8H4l8-8z' : 'M12 20l-8-8h6V4h4v8h6l-8 8z';
-        return `<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 sm:w-16 sm:h-16 filter drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 sm:w-10 sm:h-10 filter drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor"><path d="${d}"/></svg>`;
     };
 
     const getStatusClasses = (status) => {
@@ -988,67 +988,67 @@ function renderGuessRow(targetElement, { feedback }, isTP = false, turn = null) 
     const rarityClass = getRarityColor(card.rarity);
 
     const cardCell = `
-        <div class="flex flex-col items-center justify-center h-24 sm:h-36 p-1 sm:p-2 rounded-md border-2 border-slate-700/50 bg-slate-800/60">
-            <img src="${localCardImage}" alt="${card.name}" class="w-10 h-14 sm:w-16 sm:h-20 object-contain drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"/>
-            <span class="mt-1 text-[10px] sm:text-base font-clash font-bold text-white drop-shadow-md leading-tight ${rarityClass}">
+        <div class="flex flex-col items-center justify-center h-20 sm:h-28 p-1 sm:p-2 rounded-md border-2 border-slate-700/50 bg-slate-800/60">
+            <img src="${localCardImage}" alt="${card.name}" class="w-8 h-12 sm:w-12 sm:h-16 object-contain drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]"/>
+            <span class="mt-1 text-[10px] sm:text-sm font-clash font-bold text-white drop-shadow-md leading-tight ${rarityClass}">
                 ${card.name}
             </span>
         </div>`;
 
     const elixirCell = `
-        <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md font-bold text-lg sm:text-3xl border-2 transition-all duration-300 overflow-hidden ${getStatusClasses(comp.elixir)}">
+        <div class="group relative h-20 sm:h-28 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md font-bold text-base sm:text-2xl border-2 transition-all duration-300 overflow-hidden ${getStatusClasses(comp.elixir)}">
             ${comp.elixir !== 'correct' ? 
                 `<div class="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm">
                     ${getArrowIcon(comp.elixir)}
                  </div>` : ''
             }
             <div class="flex flex-col items-center justify-center transition-opacity duration-300 ${comp.elixir !== 'correct' ? 'group-hover:opacity-0' : ''}">
-                <img src="https://cdn.royaleapi.com/static/img/ui/elixir.png" class="w-5 h-5 sm:w-8 sm:h-8 mb-1"/>
+                <img src="https://cdn.royaleapi.com/static/img/ui/elixir.png" class="w-4 h-4 sm:w-6 sm:h-6 mb-1"/>
                 <span>${card.elixir}</span>
             </div>
         </div>`;
         
     const rarityCell = `
-        <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 transition-all duration-300 overflow-hidden ${getStatusClasses(comp.rarity)}">
+        <div class="group relative h-20 sm:h-28 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 transition-all duration-300 overflow-hidden ${getStatusClasses(comp.rarity)}">
              ${comp.rarity !== 'correct' ? 
                 `<div class="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-sm">
                     ${getArrowIcon(comp.rarity)}
                  </div>` : ''
             }
-            <span class="text-xs sm:text-lg font-bold transition-opacity duration-300 ${comp.rarity !== 'correct' ? 'group-hover:opacity-0' : ''} ${rarityClass}">
+            <span class="text-[10px] sm:text-base font-bold transition-opacity duration-300 ${comp.rarity !== 'correct' ? 'group-hover:opacity-0' : ''} ${rarityClass}">
                 ${card.rarity}
             </span>
         </div>`;
 
     const typeCell = `
-        <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 font-bold text-lg overflow-hidden ${getStatusClasses(comp.type)}">
-            <img src="${getTypeIcon(card.type)}" class="w-10 h-10 sm:w-16 sm:h-16 object-contain transition-opacity duration-300 group-hover:opacity-0">
-            <span class="absolute drop-shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-clash text-sm sm:text-xl">
+        <div class="group relative h-20 sm:h-28 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 font-bold text-lg overflow-hidden ${getStatusClasses(comp.type)}">
+            <img src="${getTypeIcon(card.type)}" class="w-8 h-8 sm:w-12 sm:h-12 object-contain transition-opacity duration-300 group-hover:opacity-0">
+            <span class="absolute drop-shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-clash text-sm sm:text-lg">
                 ${card.type}
             </span>
         </div>`;
 
     const arenaCell = `
-        <div class="group relative h-24 sm:h-36 flex flex-col items-center justify-center p-1 rounded-md border-2 overflow-hidden ${getStatusClasses(comp.arena)}">
+        <div class="group relative h-20 sm:h-28 flex flex-col items-center justify-center p-1 rounded-md border-2 overflow-hidden ${getStatusClasses(comp.arena)}">
             <img src="${arenaUrl}" class="w-full h-full object-cover rounded opacity-80 group-hover:opacity-20 transition-all duration-300">
             <div class="absolute inset-0 flex flex-col items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/60 backdrop-blur-[2px]">
                 ${comp.arena !== 'correct' ? getArrowIcon(comp.arena) : ''}
-                <span class="text-xs sm:text-sm font-bold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,1)] mt-1 px-1 leading-tight">
+                <span class="text-[10px] sm:text-xs font-bold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,1)] mt-1 px-1 leading-tight">
                     ${arenaName}
                 </span>
             </div>
         </div>`;
         
     const evolutionCell = `
-        <div class="h-24 sm:h-36 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 ${getStatusClasses(comp.evolution)}">
+        <div class="h-20 sm:h-28 flex flex-col items-center justify-center p-1 sm:p-2 rounded-md border-2 ${getStatusClasses(comp.evolution)}">
             ${card.evolution ? 
-                `<img src="${localEvoImage}" class="h-16 sm:h-24 w-auto object-contain drop-shadow-lg" alt="Evo">` 
+                `<img src="${localEvoImage}" class="h-12 sm:h-20 w-auto object-contain drop-shadow-lg" alt="Evo">` 
                 : 
-                '<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 sm:w-12 sm:h-12 text-red-500/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>'
+                '<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 sm:w-10 sm:h-10 text-red-500/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" /></svg>'
             }
         </div>`;
 
-    const gridClass = 'grid-cols-[100px_repeat(5,96px)] sm:grid-cols-[140px_repeat(5,144px)]';
+    const gridClass = 'grid-cols-[80px_repeat(5,72px)] sm:grid-cols-[112px_repeat(5,112px)]';
     const innerHTML = cardCell + elixirCell + rarityCell + typeCell + arenaCell + evolutionCell;
     
     row.className = `${animationClass} bg-slate-900/75 rounded-lg p-1 sm:p-2 grid ${gridClass} gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50`;

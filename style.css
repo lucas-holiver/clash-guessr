@@ -367,10 +367,10 @@ input[type="range"]::-moz-range-thumb {
     background-color: rgba(15, 23, 42, 0.5);
     margin-bottom: 0.5rem;
     border: 1px solid rgba(71, 85, 105, 0.5);
-    grid-template-columns: 100px repeat(5, 96px);
+    grid-template-columns: 80px repeat(5, 72px);
 }
 .guess-row-skeleton .skeleton-cell {
-    height: 6rem; /* h-24 */
+    height: 5rem; /* h-20 */
     background-color: #334155; /* slate-700 */
     border-radius: 0.375rem; /* rounded-md */
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -390,12 +390,12 @@ input[type="range"]::-moz-range-thumb {
 
 @media (min-width: 640px) {
     .guess-row-skeleton {
-        grid-template-columns: 140px repeat(5, 144px);
+        grid-template-columns: 112px repeat(5, 112px);
         gap: 0.5rem;
         padding: 0.5rem;
     }
     .guess-row-skeleton .skeleton-cell {
-        height: 9rem; /* sm:h-36 */
+        height: 7rem; /* sm:h-28 */
     }
 }
 
