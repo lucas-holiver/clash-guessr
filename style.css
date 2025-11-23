@@ -2,18 +2,28 @@
     --color-interact: #00E6E6;
 }
 
+/* Fontes e Utilitários */
+@font-face {
+    font-family: 'ClashFont';
+    src: url('./fonts/Clash_Regular.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'ClashFont';
+    src: url('./fonts/Clash_Bold.otf') format('opentype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+
 .font-clash {
-    font-family: 'Supercell-Magic', sans-serif;
+    font-family: 'ClashFont', sans-serif;
     text-shadow: 1px 1px 0 #000;
 }
 
-/* Fontes e Utilitários */
-@font-face {
-    font-family: 'Supercell-Magic';
-    src: url('https://cdn.jsdelivr.net/gh/mvmspace/supercell-magic-font@1.0.0/dist/Supercell-Magic_2.woff2') format('woff2');
-}
-
-body { font-family: 'Supercell-Magic', sans-serif; }
+body { font-family: 'ClashFont', sans-serif; }
 
 .bg-radial {
     background-image: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.7) 100%), 
@@ -22,7 +32,8 @@ body { font-family: 'Supercell-Magic', sans-serif; }
 }
 
 .font-clash-title {
-    font-family: 'Supercell-Magic', sans-serif;
+    font-family: 'ClashFont', sans-serif;
+    font-weight: bold;
     text-shadow: 2px 2px 0 #000;
 }
 
