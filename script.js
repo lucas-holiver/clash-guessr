@@ -16,6 +16,7 @@ let isTwoPlayerMode = false;
 let ws = null;
 let tpMaxAttempts = 0;
 let turnTimerInterval = null;
+let amIHost = false;
 
 
 // Elementos DOM Globais
@@ -119,7 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Listeners do Lobby
     backToMenuLobbyBtn.addEventListener('click', () => {
-        showConfirmationModal('Tem certeza que deseja sair do lobby? A sala será desfeita.', backToMenu);
+        if (amIHost) {
+            showConfirmationModal('Você é o anfitrião. Tem certeza que deseja sair? A sala será desfeita.', backToMenu);
+        } else {
+            backToMenu();
+        }
     });
     showCreateGameBtn.addEventListener('click', () => switchLobbyView('create'));
     showJoinGameBtn.addEventListener('click', () => switchLobbyView('join'));
@@ -195,11 +200,13 @@ function hideGameNotification() {
 
 // --- LÓGICA DE NAVEGAÇÃO E UI ---
 function backToMenu() {
+    hideConfirmationModal();
     if (ws) {
         ws.onclose = null; // Evita que a mensagem de 'conexão perdida' apareça ao voltar voluntariamente
         ws.close();
         ws = null;
     }
+    amIHost = false;
     mainMenu.classList.remove('hidden');
     singlePlayerGameContent.classList.add('hidden');
     twoPlayerGameContent.classList.add('hidden');
@@ -213,11 +220,13 @@ function backToMenu() {
 }
 
 function backToLobby() {
+    hideConfirmationModal();
     if (ws) {
         ws.onclose = null;
         ws.close();
         ws = null;
     }
+    amIHost = false;
     twoPlayerLobby.classList.remove('hidden');
     singlePlayerGameContent.classList.add('hidden');
     twoPlayerGameContent.classList.add('hidden');
@@ -569,6 +578,8 @@ function joinTwoPlayerGame(gameId, isHost = false) {
         switch(data.type) {
             case 'lobbyUpdate':
                 myPlayerId = data.myId;
+                const me = data.players.find(p => p.id === myPlayerId);
+                amIHost = me?.name === 'Anfitrião';
                 mainMenu.classList.add('hidden');
                 twoPlayerLobby.classList.remove('hidden');
                 switchLobbyView('create');
