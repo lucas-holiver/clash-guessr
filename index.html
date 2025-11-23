@@ -18,14 +18,33 @@
             <p class="text-slate-300 mt-2 text-shadow">Adivinhe a carta de CLASH!</p>
         </header>
 
-        <!-- Menu Principal -->
-        <section id="main-menu" class="w-full max-w-xs flex flex-col items-center gap-4 mt-8">
-            <button id="one-player-btn" class="w-full px-6 py-4 bg-yellow-500 text-slate-900 font-bold rounded-lg text-xl hover:bg-yellow-400 transition-transform hover:scale-105 transform disabled:bg-slate-500 disabled:scale-100 disabled:cursor-wait">
-                Um Jogador
-            </button>
-            <button id="two-player-btn" class="w-full px-6 py-4 bg-blue-600 text-white font-bold rounded-lg text-xl hover:bg-blue-500 transition-transform hover:scale-105 transform">
-                Dois Jogadores
-            </button>
+        <!-- Menu Principal Reformulado -->
+        <section id="main-menu" class="w-full max-w-4xl flex flex-col items-center gap-4 mt-8 px-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 w-full">
+                <!-- Card Modo Clássico (Um Jogador) -->
+                <div class="mode-card" onclick="document.getElementById('one-player-btn').click();">
+                    <div class="mode-card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-full h-full"><path fill="currentColor" d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5m14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1Z"/></svg>
+                    </div>
+                    <h2 class="mode-card-title">Modo Clássico</h2>
+                    <p class="mode-card-description">Teste seu conhecimento e adivinhe a carta secreta. Um desafio solo contra suas próprias deduções!</p>
+                    <button id="one-player-btn" class="mode-card-button">
+                        Jogar
+                    </button>
+                </div>
+        
+                <!-- Card Batalha 1v1 (Dois Jogadores) -->
+                <div class="mode-card" onclick="document.getElementById('two-player-btn').click();">
+                    <div class="mode-card-icon">
+                        <svg xmlns="http://www.w.org/2000/svg" viewBox="0 0 24 24" class="w-full h-full"><path fill="currentColor" d="M4.14 4.14L2.16 6.12l2.69 2.7l.71.7l-2.12 2.13l1.41 1.41l2.12-2.12l.71.71l2.69 2.69l1.98-1.98L4.14 4.14m12.72 12.72l2.12-2.12l-2.69-2.7l-.71-.7l2.12-2.12l-1.41-1.41l-2.12 2.12l-.71-.71l-2.69-2.69l-1.98 1.98l10.25 10.25M6.57 20.84L2.12 16.4l5.66-5.66l4.44 4.44l-5.65 5.66m11.31-11.31L12.2 15.2l-4.44-4.44l5.68-5.66l4.42 4.42Z"/></svg>
+                    </div>
+                    <h2 class="mode-card-title">Batalha 1v1</h2>
+                    <p class="mode-card-description">Desafie um amigo ou um oponente aleatório para ver quem descobre a carta secreta primeiro. Que vença o melhor!</p>
+                    <button id="two-player-btn" class="mode-card-button">
+                        Batalhar
+                    </button>
+                </div>
+            </div>
         </section>
 
         <!-- Lobby Dois Jogadores -->

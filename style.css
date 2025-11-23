@@ -419,3 +419,89 @@ input[type="range"]::-moz-range-thumb {
     opacity: 0;
     animation: suggestion-reveal 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+/* --- REFORMULAÇÃO DO MENU PRINCIPAL --- */
+.mode-card {
+    background: linear-gradient(165deg, #2a3a50, #1e293b);
+    border: 3px solid #ca8a04; /* yellow-600 */
+    border-radius: 1.5rem; /* rounded-3xl */
+    padding: 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 8px 25px rgba(0,0,0,0.5);
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform: perspective(1200px) rotateX(7deg) scale(0.95);
+    cursor: pointer;
+}
+
+.mode-card:hover {
+    transform: perspective(1200px) rotateX(0deg) translateY(-15px) scale(1);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.4), 0 15px 35px rgba(202, 138, 4, 0.3);
+    border-color: #f59e0b; /* yellow-500 */
+}
+
+.mode-card-icon {
+    margin-bottom: 1.5rem;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+    width: 80px;
+    height: 80px;
+    color: #e2e8f0; /* slate-200 */
+}
+
+.mode-card-title {
+    font-family: 'ClashFont', sans-serif;
+    font-weight: bold;
+    font-size: 2rem; /* text-3xl */
+    text-shadow: 2px 2px 0 #000;
+    color: #fef08a; /* yellow-200 */
+    margin-bottom: 0.75rem;
+}
+
+.mode-card-description {
+    color: #cbd5e1; /* slate-300 */
+    max-width: 300px;
+    margin-bottom: 2rem;
+    flex-grow: 1; /* Pushes button to bottom */
+    line-height: 1.6;
+}
+
+.mode-card-button {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    font-family: 'ClashFont', sans-serif;
+    font-weight: bold;
+    font-size: 1.25rem; /* text-xl */
+    text-transform: uppercase;
+    color: white;
+    background: linear-gradient(to bottom, #4f8ff7, #2c6ac4);
+    border: 2px solid #90b8f8;
+    border-radius: 0.75rem; /* rounded-xl */
+    box-shadow: 0 5px 0 #1a4a9c;
+    transition: all 0.15s ease-out;
+    position: relative;
+    top: 0;
+}
+
+.mode-card-button:hover {
+    background: linear-gradient(to bottom, #609cfa, #3d7dd1);
+}
+
+.mode-card-button:active {
+    top: 3px;
+    box-shadow: 0 2px 0 #1a4a9c;
+}
+
+.mode-card-button:disabled {
+    background: #475569; /* slate-600 */
+    box-shadow: 0 5px 0 #1e293b; /* slate-800 */
+    cursor: wait;
+    color: #94a3b8; /* slate-400 */
+    transform: none;
+    top: 0;
+}
+
+.mode-card-button:disabled:active {
+    top: 0;
+}
