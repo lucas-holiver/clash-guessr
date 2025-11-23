@@ -213,14 +213,34 @@ input[type="range"]::-moz-range-thumb {
     background-color: #facc15; /* yellow-400 */
 }
 
-/* Animação para a linha de palpite entrando */
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+/* --- ANIMAÇÕES DE REVELAÇÃO E CARREGAMENTO --- */
+
+/* Animação de revelação unificada */
+@keyframes reveal {
+    from {
+        opacity: 0;
+        transform: scale(0.9) rotateX(-20deg);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) rotateX(0);
+    }
 }
 
-.sp-guess-row {
-    animation: slideUp 0.4s ease-out forwards;
+/* Estado base para as linhas de palpite */
+.sp-guess-row,
+.tp-guess-row {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* Ativa a animação de revelação */
+.sp-guess-row.reveal,
+.tp-guess-row.reveal {
+    opacity: 1;
+    transform: scale(1);
+    animation: reveal 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 
@@ -270,28 +290,6 @@ input[type="range"]::-moz-range-thumb {
     padding-right: 0.5rem; /* Espaço para a barra de rolagem */
 }
 
-/* Animação de revelação para 2P */
-@keyframes reveal {
-    from {
-        opacity: 0;
-        transform: scale(0.9) rotateX(-20deg);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1) rotateX(0);
-    }
-}
-.tp-guess-row {
-    opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-}
-.tp-guess-row.reveal {
-    opacity: 1;
-    transform: scale(1);
-    animation: reveal 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
 
 /* Responsividade para a arena de batalha */
 @media (max-width: 1023px) {
@@ -328,4 +326,81 @@ input[type="range"]::-moz-range-thumb {
 .tp-mobile-tab.active {
     color: #f59e0b; /* yellow-500 */
     border-bottom-color: #f59e0b;
+}
+
+/* --- ESTILOS DE ESQUELETO (CARREGAMENTO) --- */
+@keyframes pulse {
+    50% { opacity: 0.5; }
+}
+
+.skeleton {
+    background-color: #334155; /* slate-700 */
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-game-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: rgba(30, 41, 59, 0.8);
+    border-radius: 0.5rem;
+    border: 1px solid #475569;
+}
+
+.guess-row-skeleton {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    background-color: rgba(15, 23, 42, 0.5);
+    margin-bottom: 0.5rem;
+    border: 1px solid rgba(71, 85, 105, 0.5);
+    grid-template-columns: 100px repeat(5, 96px);
+}
+.guess-row-skeleton .skeleton-cell {
+    height: 6rem; /* h-24 */
+    background-color: #334155; /* slate-700 */
+    border-radius: 0.375rem; /* rounded-md */
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.suggestion-skeleton-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-bottom: 1px solid #334155;
+}
+.suggestion-skeleton-item:last-child {
+    border-bottom: none;
+}
+
+
+@media (min-width: 640px) {
+    .guess-row-skeleton {
+        grid-template-columns: 140px repeat(5, 144px);
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+    .guess-row-skeleton .skeleton-cell {
+        height: 9rem; /* sm:h-36 */
+    }
+}
+
+/* --- ANIMAÇÃO PARA SUGESTÕES DE PESQUISA --- */
+@keyframes suggestion-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestion-item {
+    opacity: 0;
+    animation: suggestion-reveal 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }

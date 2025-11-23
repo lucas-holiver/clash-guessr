@@ -28,6 +28,7 @@ const endTitle = document.getElementById('end-title');
 const gameNotification = document.getElementById('game-notification');
 const gameNotificationText = document.getElementById('game-notification-text');
 const mainMenu = document.getElementById('main-menu');
+const mainHeader = document.getElementById('main-header');
 const onePlayerBtn = document.getElementById('one-player-btn');
 const twoPlayerBtn = document.getElementById('two-player-btn');
 
@@ -88,6 +89,8 @@ const confirmActionBtn = document.getElementById('confirm-action-btn');
 const cancelActionBtn = document.getElementById('cancel-action-btn');
 let confirmAction = null;
 let confirmationCountdownInterval = null;
+let searchTimeout;
+
 
 // Botões de Menu/Navegação
 const backToMenuInGameBtn = document.getElementById('back-to-menu-ingame-btn');
@@ -105,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchCards();
     
     // Listeners do Menu Principal e Fim de Jogo
-    onePlayerBtn.addEventListener('click', () => { isTwoPlayerMode = false; startNewGame(); });
+    onePlayerBtn.addEventListener('click', startNewGame);
     twoPlayerBtn.addEventListener('click', showTwoPlayerLobby);
     victoryPlayAgainBtn.addEventListener('click', () => { isTwoPlayerMode ? backToLobby() : startNewGame(); });
     defeatPlayAgainBtn.addEventListener('click', () => { isTwoPlayerMode ? backToLobby() : startNewGame(); });
@@ -207,6 +210,7 @@ function backToMenu() {
         ws = null;
     }
     amIHost = false;
+    mainHeader.classList.remove('hidden');
     mainMenu.classList.remove('hidden');
     singlePlayerGameContent.classList.add('hidden');
     twoPlayerGameContent.classList.add('hidden');
@@ -227,6 +231,7 @@ function backToLobby() {
         ws = null;
     }
     amIHost = false;
+    mainHeader.classList.add('hidden');
     twoPlayerLobby.classList.remove('hidden');
     singlePlayerGameContent.classList.add('hidden');
     twoPlayerGameContent.classList.add('hidden');
@@ -293,35 +298,56 @@ function highlightMatch(text, term) {
 
 searchInput.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
-    suggestionsList.innerHTML = '';
     
+    clearTimeout(searchTimeout);
+
     if (term.length < 1) {
+        suggestionsList.innerHTML = '';
         suggestionsList.classList.add('hidden');
         return;
     }
 
-    const filtered = allCards
-        .filter(c => c.name.toLowerCase().includes(term) && !guessedCards.has(c.name))
-        .slice(0, 5);
-    
-    if (filtered.length > 0) {
-        suggestionsList.classList.remove('hidden');
-        filtered.forEach(card => {
-            const li = document.createElement('li');
-            li.className = "flex items-center p-2 sm:p-3 hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700 last:border-0 text-white";
-            
-            const highlightedName = highlightMatch(card.name, term);
-            const slug = getCardImageSlug(card.name);
-            const localImgUrl = `./img/cards/${slug}.png`;
-
-            li.innerHTML = `<img src="${localImgUrl}" class="w-8 h-8 sm:w-10 sm:h-10 object-contain mr-2 sm:mr-3"><span class="text-sm sm:text-base">${highlightedName}</span>`;
-            li.onmousedown = () => makeGuess(card.name); 
-            suggestionsList.appendChild(li);
-        });
-    } else {
-        suggestionsList.classList.add('hidden');
+    // Exibe o esqueleto de carregamento imediatamente
+    suggestionsList.innerHTML = '';
+    suggestionsList.classList.remove('hidden');
+    for (let i = 0; i < 3; i++) {
+        const li = document.createElement('li');
+        li.className = "suggestion-skeleton-item";
+        li.innerHTML = `
+            <div class="skeleton w-8 h-8 sm:w-10 sm:h-10 rounded shrink-0"></div>
+            <div class="skeleton h-4 w-3/4 rounded"></div>
+        `;
+        suggestionsList.appendChild(li);
     }
+
+    // Atrasa a busca para exibir a animação e evitar buscas excessivas
+    searchTimeout = setTimeout(() => {
+        const filtered = allCards
+            .filter(c => c.name.toLowerCase().includes(term) && !guessedCards.has(c.name))
+            .slice(0, 5);
+        
+        suggestionsList.innerHTML = ''; // Limpa o esqueleto
+
+        if (filtered.length > 0) {
+            filtered.forEach((card, index) => {
+                const li = document.createElement('li');
+                li.className = "suggestion-item flex items-center p-2 sm:p-3 hover:bg-slate-700 cursor-pointer transition-colors border-b border-slate-700 last:border-0 text-white";
+                li.style.animationDelay = `${index * 60}ms`;
+
+                const highlightedName = highlightMatch(card.name, term);
+                const slug = getCardImageSlug(card.name);
+                const localImgUrl = `./img/cards/${slug}.png`;
+
+                li.innerHTML = `<img src="${localImgUrl}" class="w-8 h-8 sm:w-10 sm:h-10 object-contain mr-2 sm:mr-3"><span class="text-sm sm:text-base">${highlightedName}</span>`;
+                li.onmousedown = () => makeGuess(card.name); 
+                suggestionsList.appendChild(li);
+            });
+        } else {
+            suggestionsList.classList.add('hidden');
+        }
+    }, 200);
 });
+
 
 document.addEventListener('click', (e) => {
     if (!searchSection.contains(e.target)) {
@@ -346,19 +372,28 @@ async function makeGuess(cardName) {
             showGameNotification("Seu palpite foi enviado! Aguardando o oponente...");
         }
     } else {
+        const skeletonRow = renderGuessSkeleton(spGuessesList);
         try {
             const res = await fetch(`${API_URL}/guess`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: currentGameId, guessName: cardName })
             });
+
+            skeletonRow.remove();
             
-            if (!res.ok) return;
+            if (!res.ok) {
+                guessedCards.delete(cardName); // Permite tentar a mesma carta novamente em caso de erro
+                return;
+            }
 
             const { feedback, hints: receivedHints, attempts } = await res.json();
             
             updateHints(receivedHints);
-            renderGuessRow(spGuessesList, { feedback });
+            const guessRow = renderGuessRow(spGuessesList, { feedback });
+            void guessRow.offsetWidth; // Dispara o reflow para a animação funcionar
+            guessRow.classList.add('reveal');
+
             renderAttempts(attempts.current, attempts.max);
 
             if (feedback.isWin) {
@@ -369,6 +404,7 @@ async function makeGuess(cardName) {
 
         } catch (err) { 
             console.error("Erro no palpite", err);
+            skeletonRow.remove();
             guessedCards.delete(cardName); 
         }
     }
@@ -469,6 +505,7 @@ async function startNewGame(event) {
 }
 
 function prepareSinglePlayerBoard(maxAttempts) {
+    mainHeader.classList.add('hidden');
     mainMenu.classList.add('hidden');
     twoPlayerLobby.classList.add('hidden');
     twoPlayerGameContent.classList.add('hidden');
@@ -496,6 +533,7 @@ function prepareSinglePlayerBoard(maxAttempts) {
 // --- MODO DOIS JOGADORES (WEBSOCKET) ---
 
 function showTwoPlayerLobby() {
+    mainHeader.classList.add('hidden');
     mainMenu.classList.add('hidden');
     twoPlayerLobby.classList.remove('hidden');
     fetchPublicGames();
@@ -727,6 +765,7 @@ function switchTwoPlayerMobileView(view) {
 }
 
 function prepareTwoPlayerBoard(settings) {
+    mainHeader.classList.add('hidden');
     mainMenu.classList.add('hidden');
     twoPlayerLobby.classList.add('hidden');
     singlePlayerGameContent.classList.add('hidden');
@@ -762,10 +801,25 @@ function prepareTwoPlayerBoard(settings) {
 
 
 async function fetchPublicGames() {
+    publicGamesList.innerHTML = '';
+    // Exibe o esqueleto de carregamento
+    for (let i = 0; i < 3; i++) {
+        const li = document.createElement('li');
+        li.className = 'skeleton-game-item';
+        li.innerHTML = `
+            <div class="flex flex-col gap-2">
+                <div class="skeleton h-4 w-32 rounded"></div>
+                <div class="skeleton h-3 w-24 rounded"></div>
+            </div>
+            <div class="skeleton h-8 w-16 rounded"></div>
+        `;
+        publicGamesList.appendChild(li);
+    }
+
     try {
         const res = await fetch(`${API_URL}/public-games`);
         const games = await res.json();
-        publicGamesList.innerHTML = '';
+        publicGamesList.innerHTML = ''; // Limpa o esqueleto
 
         if (games.length === 0) {
             publicGamesList.innerHTML = '<li id="no-public-games" class="text-center text-slate-400 p-4">Nenhuma partida pública encontrada.</li>';
@@ -866,29 +920,33 @@ function getRarityColor(r) {
     return 'text-white';
 }
 
-function renderPlaceholderRow(targetElement, message, turn) {
+function renderGuessSkeleton(targetElement) {
     const row = document.createElement('div');
-    row.className = 'tp-guess-row bg-slate-900/75 rounded-lg p-1 sm:p-2 grid grid-cols-1 gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border-2 border-dashed border-slate-700 h-24 sm:h-36 flex items-center justify-center';
-    row.innerHTML = `<p class="text-slate-400 italic px-4">${message}</p>`;
-    row.dataset.turn = turn;
+    row.className = 'guess-row-skeleton';
+    let cellsHTML = '';
+    for (let i = 0; i < 6; i++) {
+        cellsHTML += '<div class="skeleton-cell"></div>';
+    }
+    row.innerHTML = cellsHTML;
     targetElement.prepend(row);
     return row;
 }
 
+function renderPlaceholderRow(targetElement, message, turn) {
+    const row = renderGuessSkeleton(targetElement);
+    row.dataset.turn = turn;
+    return row;
+}
 
 function renderGuessRow(targetElement, { feedback }, isTP = false, turn = null) {
     if (!feedback) return null;
 
-    // Para o jogador que já jogou, mostra no painel do oponente que está aguardando.
     if (isTP && feedback.waiting) {
-        const message = "Aguardando oponente...";
-        return renderPlaceholderRow(targetElement, message, turn);
+        return renderPlaceholderRow(targetElement, "Aguardando oponente...", turn);
     }
     
-    // Para o jogador que ainda não jogou, mostra no painel do oponente que ele já jogou.
     if (isTP && feedback.hasGuessed) {
-        const message = "O oponente já jogou. Faça sua jogada para revelar a carta.";
-        return renderPlaceholderRow(targetElement, message, turn);
+        return renderPlaceholderRow(targetElement, "O oponente já jogou...", turn);
     }
 
     const card = feedback.card;
@@ -990,7 +1048,7 @@ function renderGuessRow(targetElement, { feedback }, isTP = false, turn = null) 
             }
         </div>`;
 
-    const gridClass = 'grid-cols-[100px_repeat(5,80px)] sm:grid-cols-[140px_repeat(5,110px)]';
+    const gridClass = 'grid-cols-[100px_repeat(5,96px)] sm:grid-cols-[140px_repeat(5,144px)]';
     const innerHTML = cardCell + elixirCell + rarityCell + typeCell + arenaCell + evolutionCell;
     
     row.className = `${animationClass} bg-slate-900/75 rounded-lg p-1 sm:p-2 grid ${gridClass} gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50`;
