@@ -299,6 +299,10 @@ input[type="range"]::-moz-range-thumb {
     flex-grow: 1;
     overflow: auto;
     padding-right: 0.5rem; /* Espaço para a barra de rolagem */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem; /* Equivalente ao space-y-2 */
 }
 
 

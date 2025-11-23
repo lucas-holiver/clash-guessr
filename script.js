@@ -1051,7 +1051,7 @@ function renderGuessRow(targetElement, { feedback }, isTP = false, turn = null) 
     const gridClass = 'grid-cols-[80px_repeat(5,72px)] sm:grid-cols-[112px_repeat(5,112px)]';
     const innerHTML = cardCell + elixirCell + rarityCell + typeCell + arenaCell + evolutionCell;
     
-    row.className = `${animationClass} bg-slate-900/75 rounded-lg p-1 sm:p-2 grid ${gridClass} gap-1 sm:gap-2 text-center text-white transition-all duration-500 mb-2 border border-slate-700/50`;
+    row.className = `${animationClass} bg-slate-900/75 rounded-lg p-1 sm:p-2 grid ${gridClass} gap-1 sm:gap-2 text-center text-white transition-all duration-500 border border-slate-700/50`;
     row.innerHTML = innerHTML;
 
     targetElement.prepend(row);
